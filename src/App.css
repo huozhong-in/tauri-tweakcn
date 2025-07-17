@@ -34,3 +34,12 @@
 .custom-scrollbar-container:hover .custom-scrollbar-thumb:hover {
     opacity: 1 !important;
 }
+
+/* 隐藏不需要的滚动条 */
+.custom-scrollbar-container .custom-scrollbar-thumb[data-hidden="true"] {
+    display: none !important;
+}
+
+.custom-scrollbar-container .custom-scrollbar-track[data-hidden="true"] {
+    display: none !important;
+}

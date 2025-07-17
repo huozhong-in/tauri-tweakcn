@@ -12,8 +12,8 @@ function App() {
   const { theme } = useTheme();
 
   return (
-    <div className="main-content w-full flex flex-row justify-center text-center overflow-hidden">
-      <div className="w-1/3">
+    <div className="main-content w-full flex flex-row justify-center text-center">
+      <div className="w-1/3 overflow-hidden">
         <CustomScrollbar style={{ height: '100%' }}>
           <ThemeControlPanel
             styles={themeState.styles}
@@ -25,7 +25,7 @@ function App() {
           />
         </CustomScrollbar>
       </div>
-      <div className="w-2/3">
+      <div className="w-2/3 overflow-hidden">
         <CustomScrollbar style={{ height: '100%' }}>
           <ThemePreviewPanel styles={themeState.styles} currentMode={theme} />
         </CustomScrollbar>

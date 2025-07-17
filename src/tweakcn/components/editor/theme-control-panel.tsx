@@ -78,7 +78,7 @@ const ThemeControlPanel = ({
 
   return (
     <>
-      <div className="border-b">
+      <div className="border-b flex items-center">
         {!theme ? (
           <ThemePresetSelect className="h-14 rounded-none" />
         ) : (

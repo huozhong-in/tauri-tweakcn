@@ -10,7 +10,7 @@ import {
   Shuffle,
   Sun,
 } from "lucide-react";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { useTheme } from "@/tweakcn/components/theme-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -124,7 +124,7 @@ const ThemeCycleButton: React.FC<ThemeCycleButtonProps> = ({
       <Button
         variant="ghost"
         size="icon"
-        className={cn("aspect-square h-full shrink-0", className)}
+        className={cn("aspect-square h-full shrink-0 w-8 min-w-8", className)}
         onClick={onClick}
         {...props}
       >
@@ -176,7 +176,7 @@ const ThemePresetCycleControls: React.FC<ThemePresetCycleControlsProps> = ({
       <ThemeCycleButton
         direction="prev"
         size="icon"
-        className={cn("aspect-square min-h-8 w-auto", className)}
+        className={cn("aspect-square min-h-8 w-8 min-w-8", className)}
         onClick={() => cycleTheme("prev")}
         {...props}
       />
@@ -186,7 +186,7 @@ const ThemePresetCycleControls: React.FC<ThemePresetCycleControlsProps> = ({
       <ThemeCycleButton
         direction="next"
         size="icon"
-        className={cn("aspect-square min-h-8 w-auto", className)}
+        className={cn("aspect-square min-h-8 w-8 min-w-8", className)}
         onClick={() => cycleTheme("next")}
         {...props}
       />
@@ -257,7 +257,7 @@ const ThemePresetSelect: React.FC<ThemePresetSelectProps> = ({
         <PopoverTrigger asChild>
           <Button
             variant="ghost"
-            className={cn("group relative w-full justify-between md:min-w-56", className)}
+            className={cn("group relative flex-1 justify-between md:min-w-56", className)}
             {...props}
           >
             <div className="flex w-full items-center gap-3 overflow-hidden">
@@ -417,12 +417,14 @@ const ThemePresetSelect: React.FC<ThemePresetSelectProps> = ({
       </Popover>
 
       {withCycleThemes && (
-        <ThemePresetCycleControls
-          filteredPresets={filteredPresets}
-          currentPresetName={currentPresetName || "default"}
-          className={className}
-          disabled={props.disabled}
-        />
+        <div className="flex items-center shrink-0">
+          <ThemePresetCycleControls
+            filteredPresets={filteredPresets}
+            currentPresetName={currentPresetName || "default"}
+            className={className}
+            disabled={props.disabled}
+          />
+        </div>
       )}
     </div>
   );
