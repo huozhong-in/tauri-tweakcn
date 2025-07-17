@@ -1,10 +1,17 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
+import { ThemeProvider } from "./tweakcn/components/theme-provider";
+import { TooltipProvider } from "./tweakcn/components/ui/tooltip";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <App />
+    <ThemeProvider>
+      {/* @ts-ignore */}
+      <TooltipProvider delayDuration={0}>
+        <App />
+      </TooltipProvider>
+    </ThemeProvider>
   </React.StrictMode>,
 );
 
