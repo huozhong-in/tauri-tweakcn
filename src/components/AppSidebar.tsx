@@ -21,8 +21,7 @@ import {
   CommandList,
 } from "@/components/ui/command"
 import { UserProfileMenu } from "./UserProfileMenu";
-// import { CustomScrollbar } from "@/components/CustomScrollbar";
-// import { ScrollArea } from "@/components/ui/scroll-area";
+import { CustomScrollbar } from "@/components/CustomScrollbar";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [searchOpen, setSearchOpen] = React.useState(false);
@@ -99,6 +98,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </div>
         </SidebarHeader>
         <SidebarContent className="overflow-y-auto">
+            <CustomScrollbar>
             {/* Task List */}
             <div className="space-y-1">
                 <SidebarMenu>
@@ -117,6 +117,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 ))}
                 </SidebarMenu>
             </div>
+            </CustomScrollbar>
         </SidebarContent>
         
         <SidebarFooter className="p-0 flex-shrink-0">

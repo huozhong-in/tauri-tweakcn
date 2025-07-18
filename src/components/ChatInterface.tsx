@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ChatInput, ChatInputTextArea, ChatInputSubmit } from "@/components/ui/chat-input";
 import { ChatMessageAvatar } from "@/components/ui/chat-message";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { CustomScrollbar } from "@/components/CustomScrollbar";
 import { 
   useSidebar,
   SidebarTrigger,
@@ -79,7 +79,7 @@ export function ChatInterface() {
     </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 p-4 rounded-md">
+      <CustomScrollbar className="flex-1 p-4 rounded-md">
         <div className="space-y-4">
           {messages.map((message) => (
             <div key={message.id} className={`flex gap-4 w-full ${message.type === 'outgoing' ? 'justify-end ml-auto' : 'justify-start mr-auto'}`}>
@@ -105,7 +105,7 @@ export function ChatInterface() {
             </div>
           )}
         </div>
-      </ScrollArea>
+      </CustomScrollbar>
 
       {/* Input */}
       <div className="border-t p-4">
