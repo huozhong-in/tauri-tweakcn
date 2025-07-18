@@ -1,6 +1,6 @@
 "use client";
 
-import React, { forwardRef, useEffect, useImperativeHandle, useState, useRef } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useState, useRef } from "react";
 import { cn } from "@/tweakcn/lib/utils";
 
 // Define the structure of the theme item object

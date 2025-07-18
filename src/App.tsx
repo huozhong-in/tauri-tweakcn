@@ -1,36 +1,23 @@
 import "./App.css";
 import "./tweakcn/app/globals.css";
-import ThemeControlPanel from "./tweakcn/components/editor/theme-control-panel";
-import ThemePreviewPanel from "./tweakcn/components/editor/theme-preview-panel";
-import { useEditorStore } from "./tweakcn/store/editor-store";
-import { useTheme } from "./tweakcn/components/theme-provider";
-import { CustomScrollbar } from "./components/CustomScrollbar";
-import { ThemeStyles } from "./tweakcn/types/theme";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { AppSidebar } from "./components/AppSidebar";
+import { ChatInterface } from "./components/ChatInterface";
 
 function App() {
-  const { themeState, setThemeState } = useEditorStore();
-  const { theme } = useTheme();
-
   return (
-    <div className="main-content w-full flex flex-row justify-center text-center">
-      <div className="w-1/3 overflow-hidden">
-        <CustomScrollbar style={{ height: '100%' }}>
-          <ThemeControlPanel
-            styles={themeState.styles}
-            currentMode={theme}
-            onChange={(newStyles: ThemeStyles) => {
-              setThemeState({ ...themeState, styles: newStyles });
-            }}
-            themePromise={Promise.resolve(null)}
-          />
-        </CustomScrollbar>
+    <SidebarProvider>
+      <div className="flex h-screen w-full">
+        <AppSidebar />
+        <SidebarInset>    
+            <main className="flex-1 flex flex-col">
+                <div className="flex-1 overflow-hidden">
+                    <ChatInterface />
+                </div>
+            </main>
+        </SidebarInset>
       </div>
-      <div className="w-2/3 overflow-hidden">
-        <CustomScrollbar style={{ height: '100%' }}>
-          <ThemePreviewPanel styles={themeState.styles} currentMode={theme} />
-        </CustomScrollbar>
-      </div>
-    </div>
+    </SidebarProvider>
   );
 }
 
