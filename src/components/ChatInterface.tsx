@@ -2,10 +2,6 @@ import { useState } from "react";
 import { ChatInput, ChatInputTextArea, ChatInputSubmit } from "@/components/ui/chat-input";
 import { ChatMessageAvatar } from "@/components/ui/chat-message";
 import { CustomScrollbar } from "@/components/CustomScrollbar";
-import { 
-  useSidebar,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
 
 interface Message {
   id: string;
@@ -38,8 +34,6 @@ export function ChatInterface() {
   
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { state, toggleSidebar } = useSidebar()
-  const isCollapsed = state === "collapsed"
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
@@ -72,11 +66,10 @@ export function ChatInterface() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-    <div className="border-b p-4 flex items-center gap-4">
-      {!isCollapsed && <SidebarTrigger />}
-      <div className="text-xl font-semibold">主题预览聊天</div>
-      <div className="text-sm text-muted-foreground ml-auto">在这里测试您的主题效果</div>
-    </div>
+      <div className="border-b p-4 flex items-center gap-4">
+        <div className="text-xl font-semibold">主题预览聊天</div>
+        <div className="text-sm text-muted-foreground ml-auto">在这里测试您的主题效果</div>
+      </div>
 
       {/* Messages */}
       <CustomScrollbar className="flex-1 p-4 rounded-md">
