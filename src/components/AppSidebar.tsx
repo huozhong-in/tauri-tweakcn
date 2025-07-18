@@ -120,7 +120,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </CustomScrollbar>
         </SidebarContent>
         
-        <SidebarFooter className="p-0 flex-shrink-0">
+        <SidebarFooter className="py-0 px-1 flex-shrink-0">
           <div className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
             <UserProfileMenu />
           </div>

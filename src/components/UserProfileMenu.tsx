@@ -4,7 +4,8 @@ import {
   Cpu, 
   Globe, 
   Info, 
-  Palette
+  Palette,
+  ChevronsUpDown
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -36,16 +37,23 @@ export function UserProfileMenu() {
           </Avatar>
           {!isCollapsed && (
             <div className="flex flex-col flex-1 text-left">
-              <span className="text-sm font-medium">用户名</span>
+              <span className="text-sm font-medium">user</span>
               <span className="text-xs text-muted-foreground">user@example.com</span>
             </div>
           )}
+          <ChevronsUpDown className="ml-auto size-4" />
         </div>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-60" align="end" forceMount>
+      <DropdownMenuContent 
+        className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg" 
+        align="end" 
+        side="right" 
+        sideOffset={2}
+        forceMount
+      >
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">用户名</p>
+            <p className="text-sm font-medium leading-none">user</p>
             <p className="text-xs leading-none text-muted-foreground">
               user@example.com
             </p>
