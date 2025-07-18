@@ -24,7 +24,7 @@ import {
   CommandList,
 } from "@/components/ui/command"
 import { UserProfileMenu } from "./UserProfileMenu";
-import { CustomScrollbar } from "@/components/CustomScrollbar";
+import { CustomScrollbar } from "./CustomScrollbar";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [searchOpen, setSearchOpen] = React.useState(false);

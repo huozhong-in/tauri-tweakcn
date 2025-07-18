@@ -18,13 +18,13 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ThemeSettingsDialog } from "./ThemeSettingsDialog";
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { ThemeSettingsDialog } from "./ThemeSettingsDialog";
 
 export function UserProfileMenu() {
   const { state } = useSidebar();

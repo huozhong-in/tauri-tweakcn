@@ -1,8 +1,8 @@
 import "./App.css";
 import "./tweakcn/app/globals.css";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import { AppSidebar } from "./components/AppSidebar";
-import { ChatInterface } from "./components/ChatInterface";
+import { AppSidebar } from "./AppSidebar";
+import { AppWorkspace } from "./AppWorkspace";
 
 function App() {
   return (
@@ -10,7 +10,7 @@ function App() {
       <div className="flex h-full">
         <AppSidebar />
         <SidebarInset>
-          <ChatInterface />
+          <AppWorkspace />
         </SidebarInset>
       </div>
     </SidebarProvider>
