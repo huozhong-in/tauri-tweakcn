@@ -15,9 +15,9 @@
       {
         "title": "",
         "titleBarStyle": "Overlay",
-        "width": 1400,
-        "height": 900,
-        "minWidth": 1000,
+        "width": 1350,
+        "height": 800,
+        "minWidth": 440,
         "minHeight": 700
       }
     ],
