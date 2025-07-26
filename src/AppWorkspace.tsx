@@ -7,8 +7,11 @@ import { ScrollArea } from "./components/ui/scroll-area";
 import { Button } from "./components/ui/button";
 import { openPath } from '@tauri-apps/plugin-opener';
 import { open, Command } from '@tauri-apps/plugin-shell';
-
 import { checkAccessibilityPermission, requestAccessibilityPermission } from "tauri-plugin-macos-permissions-api";
+import { getCurrentWindow, LogicalPosition, Window, LogicalSize, availableMonitors, currentMonitor } from '@tauri-apps/api/window';
+import { aw } from "node_modules/better-auth/dist/shared/better-auth.DdmVKCUf";
+
+
 
 async function ensureAccessibilityPermission() {
   try {
@@ -184,16 +187,60 @@ export function AppWorkspace() {
       console.log('权限检查结果:', hasPermission);
       
       if (hasPermission) {
+        // --- 第1步：打开PDF并抢回焦点 (使用我们之前讨论的稳定版方案) ---
+        await handleOpenPDF();
+        await new Promise(resolve => setTimeout(resolve, 500)); // 短暂等待，确保“预览”已启动
+        const appWindow = Window.getCurrent();
+        await appWindow.setFocus();
         
+        // --- 第2步：获取显示器信息 ---
+        const monitor = await currentMonitor();
+        if (!monitor) throw new Error("无法获取主显示器信息。");
+        
+        const monitorSize = monitor.size;
+        const halfWidth = monitorSize.width / 2;
+
+        // --- 第3步：将Tauri应用窗口置于左侧 ---
+        console.log("正在将本应用窗口移动到左侧...");
+        await appWindow.setSize(new LogicalSize(halfWidth, monitorSize.height));
+        // await getCurrentWindow().setPosition(new LogicalPosition(600, 500));
+        // await appWindow.setPosition(new LogicalPosition(0, 0));
+        // 使用 monitor.position 来处理多显示器情况更佳
+        await appWindow.setPosition(new LogicalPosition(monitor.position.x, monitor.position.y));
+        // --- 第4步：通过AppleScript将“预览”窗口置于右侧 ---
+        console.log("正在将“预览”窗口移动到右侧...");
+        const appleScript = `
+          tell application "System Events"
+            -- 检查“预览”进程是否存在
+            if process "Preview" exists then
+              tell process "Preview"
+                -- 获取其最前方的窗口 (通常是刚打开的PDF)
+                if window 1 exists then
+                  set the window_ to window 1
+                  -- 设置窗口的边界 {x1, y1, x2, y2}
+                  -- x1 = 左上角x, y1 = 左上角y
+                  -- x2 = 右下角x, y2 = 右下角y
+                  set bounds of the window_ to {${halfWidth}, 0, ${monitorSize.width}, ${monitorSize.height}}
+                end if
+              end tell
+            end if
+          end tell
+        `;
+
+        const command = Command.create('run-applescript', ['-e', appleScript]);
+        const output = await command.execute();
+
+        if (output.code !== 0) {
+          console.error("AppleScript执行失败:", output.stderr);
+        } else {
+          console.log("分屏布局设置成功！");
+        }
       } else {
         console.log('权限不足，打开系统设置...');
         await open('x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility');
-        console.log('系统设置已打开');
       }
     } catch (error) {
       console.error('控制预览应用时发生错误:', error);
-      const errorMessage = error instanceof Error ? error.message : '未知错误';
-      alert(`控制预览应用失败: ${errorMessage}`);
     }
   };
 
@@ -299,13 +346,21 @@ export function AppWorkspace() {
           >
             <span className="text-xs">打开PDF</span>
           </Button>
+          <Button 
+            onClick={() => {
+              handleControlPreviewApp();
+            }}
+            className="px-3 py-1 text-sm bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90"
+          >
+            <span className="text-xs">控制预览应用</span>
+          </Button>
           <Button
             onClick={() => {
               handleExecuteSh();
             }}
             className="px-3 py-1 text-sm bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90"
           >
-            <span className="text-xs">执行Shell命令</span>
+            <span className="text-xs">测试执行Shell命令</span>
           </Button>
         </div>
       </div>

@@ -7,6 +7,9 @@
     "core:default",
     "opener:default",
     "core:window:default",
+    "core:window:allow-set-focus",
+    "core:window:allow-set-position",
+    "core:window:allow-set-size",
     "core:window:allow-start-dragging",
     "shell:allow-open",
     "macos-permissions:default",
@@ -24,12 +27,7 @@
         {
           "name": "run-applescript",
           "cmd": "osascript",
-          "args": [
-            "-e",
-            {
-              "validator": ".+"
-            }
-          ]
+          "args": true
         },
         {
           "name": "python-version",
