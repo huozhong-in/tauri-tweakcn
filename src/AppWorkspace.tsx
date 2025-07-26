@@ -9,10 +9,16 @@ import { openPath } from '@tauri-apps/plugin-opener';
 import { open, Command } from '@tauri-apps/plugin-shell';
 import { checkAccessibilityPermission, requestAccessibilityPermission } from "tauri-plugin-macos-permissions-api";
 import { getCurrentWindow, LogicalPosition, Window, LogicalSize, availableMonitors, currentMonitor } from '@tauri-apps/api/window';
-import { aw } from "node_modules/better-auth/dist/shared/better-auth.DdmVKCUf";
+import {
+  getScreenshotableWindows,
+  getWindowScreenshot,
+} from "tauri-plugin-screenshots-api";
 
-
-
+async function captureScreen() {
+  const windows = await getScreenshotableWindows();
+  const path = await getWindowScreenshot(windows[0].id);
+  console.log(path); // xx/tauri-plugin-screenshots/window-{id}.png
+}
 async function ensureAccessibilityPermission() {
   try {
     console.log('检查辅助功能权限...');
@@ -192,6 +198,9 @@ export function AppWorkspace() {
         await new Promise(resolve => setTimeout(resolve, 500)); // 短暂等待，确保“预览”已启动
         const appWindow = Window.getCurrent();
         await appWindow.setFocus();
+
+        // const windowList = await Window.getAll();
+        // console.log("当前所有窗口列表:", windowList);
         
         // --- 第2步：获取显示器信息 ---
         const monitor = await currentMonitor();
@@ -210,19 +219,9 @@ export function AppWorkspace() {
         // --- 第4步：通过AppleScript将“预览”窗口置于右侧 ---
         console.log("正在将“预览”窗口移动到右侧...");
         const appleScript = `
-          tell application "System Events"
-            -- 检查“预览”进程是否存在
-            if process "Preview" exists then
-              tell process "Preview"
-                -- 获取其最前方的窗口 (通常是刚打开的PDF)
-                if window 1 exists then
-                  set the window_ to window 1
-                  -- 设置窗口的边界 {x1, y1, x2, y2}
-                  -- x1 = 左上角x, y1 = 左上角y
-                  -- x2 = 右下角x, y2 = 右下角y
-                  set bounds of the window_ to {${halfWidth}, 0, ${monitorSize.width}, ${monitorSize.height}}
-                end if
-              end tell
+          tell application "Preview"
+            if (bounds of front window) is not equal to {${halfWidth}, 0, ${monitorSize.width}, ${monitorSize.height}} then
+              set bounds of front window to {${halfWidth}, 0, ${monitorSize.width}, ${monitorSize.height}}
             end if
           end tell
         `;
