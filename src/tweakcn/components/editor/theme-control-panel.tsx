@@ -4,7 +4,7 @@ import { AlertCircle } from "lucide-react";
 import React, { useState } from "react";
 
 import { Label } from "@/components/ui/label";
-import { CustomScrollbar } from "../../../CustomScrollbar";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList } from "@/components/ui/tabs";
 import {
@@ -104,7 +104,7 @@ const ThemeControlPanel = ({
           <div className="flex-1 min-h-0">
             <TabsContent value="colors" className="mt-1 h-full overflow-hidden data-[state=active]:h-full">
               <div className="px-4" style={{ height: '400px' }}>
-                <CustomScrollbar style={{ height: '100%' }}>
+                <ScrollArea style={{ height: '100%' }}>
                   <div className="space-y-4 pr-5">
                     <ControlSection title="Primary Colors" expanded>
                       <ColorPicker
@@ -299,13 +299,13 @@ const ThemeControlPanel = ({
                       />
                     </ControlSection>
                   </div>
-                </CustomScrollbar>
+                </ScrollArea>
               </div>
             </TabsContent>
 
           <TabsContent value="typography" className="mt-1 size-full overflow-hidden">
             <div className="px-4" style={{ height: '400px' }}>
-              <CustomScrollbar style={{ height: '100%' }}>
+              <ScrollArea style={{ height: '100%' }}>
                 <div className="space-y-4 pr-5">
                   <div className="bg-muted/50 mb-4 flex items-start gap-2.5 rounded-md border p-3">
                 <AlertCircle className="text-muted-foreground mt-0.5 h-5 w-5 shrink-0" />
@@ -378,13 +378,13 @@ const ThemeControlPanel = ({
                 />
               </ControlSection>
                 </div>
-              </CustomScrollbar>
+              </ScrollArea>
             </div>
           </TabsContent>
 
           <TabsContent value="other" className="mt-1 size-full overflow-hidden">
             <div className="px-4" style={{ height: '400px' }}>
-              <CustomScrollbar style={{ height: '100%' }}>
+              <ScrollArea style={{ height: '100%' }}>
                 <div className="space-y-4 pr-5">
                   <ControlSection title="HSL Adjustments" expanded>
                 <HslAdjustmentControls />
@@ -434,7 +434,7 @@ const ThemeControlPanel = ({
                 />
               </ControlSection>
                 </div>
-              </CustomScrollbar>
+              </ScrollArea>
             </div>
           </TabsContent>
           </div>

@@ -6,7 +6,9 @@ import { useSidebar } from "@/components/ui/sidebar";
 import { ScrollArea } from "./components/ui/scroll-area";
 import { Button } from "./components/ui/button";
 import { openPath } from '@tauri-apps/plugin-opener';
-import { open, Command } from '@tauri-apps/plugin-shell';
+import { Command, open } from '@tauri-apps/plugin-shell';
+
+// 在你的前端JavaScript/TypeScript文件中
 
 import { checkAccessibilityPermission, requestAccessibilityPermission } from "tauri-plugin-macos-permissions-api";
 
@@ -41,6 +43,22 @@ async function ensureAccessibilityPermission() {
     return false;
   }
 }
+  let hasPermission = await checkAccessibilityPermission();
+
+  if (!hasPermission) {
+    // 如果没有权限，发起请求
+    const permissionGranted = await requestAccessibilityPermission();
+    if (!permissionGranted) {
+      // 用户在弹窗中选择了“拒绝”，或者没有完成授权
+      alert("未能获取辅助功能权限，无法控制其他应用。请在“系统设置”中手动开启。");
+      return false;
+    }
+    // 更新权限状态
+    hasPermission = await checkAccessibilityPermission();
+  }
+  
+  return hasPermission;
+}
 
 interface Message {
   id: string;
@@ -74,6 +92,7 @@ export function AppWorkspace() {
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const [userPrefersSidebarExpanded, setUserPrefersSidebarExpanded] = useState(true); // 用户偏好
   
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
@@ -89,6 +108,10 @@ export function AppWorkspace() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // 监听侧边栏状态变化，记录用户偏好
+  useEffect(() => {
+    setUserPrefersSidebarExpanded(!isCollapsed);
+  }, [isCollapsed]);
 
   // 响应式显示逻辑 - 用户意图优先
   
@@ -108,6 +131,9 @@ export function AppWorkspace() {
   // 判断当前主工作区能容纳哪些组合
   const canFitExpandedSidebarWithChatUI = windowWidth >= (SIDEBAR_EXPANDED + CHATUI_MIN + CANVAS_MIN);
 
+  // 智能建议收起侧边栏（仅提示，不强制）
+  const shouldSuggestCollapse = userPrefersSidebarExpanded && !isCollapsed && !canFitExpandedSidebarWithChatUI;
+  
   // 判断是否显示各个区域（基于主工作区可用宽度）
   const shouldShowFileList = workspaceWidth >= (FILELIST_MIN + CHATUI_MIN + CANVAS_MIN);
   const shouldShowChatUI = workspaceWidth >= (CHATUI_MIN + CANVAS_MIN);
@@ -153,49 +179,32 @@ export function AppWorkspace() {
 
   const handleOpenPDF = async () => {
     try {
-      const pdfPath = '/Users/dio/workspace/temp/pdf-embed-react-examples/public/sample2.pdf';
-      // const pdfPath = '/Users/dio/Downloads/AI代理的上下文工程：构建Manus的经验教训.pdf';
-      console.log('尝试打开PDF文件:', pdfPath);
-      await openPath(pdfPath);
-    } catch (error) {
-      console.error('打开PDF时发生错误:', error);
-    }
-  }
-
-  const handleExecuteSh = async () => {
-    try {
-      // 执行Shell命令
-      const cmd = Command.create('python-version', [
-        '--version'
-      ]);
-      const output = await cmd.execute();
-      console.log(output);
-    } catch (error) {
-      console.error('执行Shell命令时发生错误:', error);
-    }
-  };
-
-  const handleControlPreviewApp = async () => {
-    try {
-      console.log('开始控制预览应用...');
+      console.log('开始处理PDF打开请求...');
       
       // 检查辅助功能权限
       const hasPermission = await ensureAccessibilityPermission();
       console.log('权限检查结果:', hasPermission);
       
       if (hasPermission) {
+        const pdfPath = '/Users/dio/workspace/temp/pdf-embed-react-examples/public/sample2.pdf';
+        console.log('尝试打开PDF文件:', pdfPath);
         
+        await openPath(pdfPath);
+        console.log('PDF文件打开成功');
+        
+        // 可选：添加成功提示
+        // alert('PDF文件已打开');
       } else {
         console.log('权限不足，打开系统设置...');
         await open('x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility');
         console.log('系统设置已打开');
       }
     } catch (error) {
-      console.error('控制预览应用时发生错误:', error);
+      console.error('打开PDF时发生错误:', error);
       const errorMessage = error instanceof Error ? error.message : '未知错误';
-      alert(`控制预览应用失败: ${errorMessage}`);
+      alert(`打开PDF失败: ${errorMessage}`);
     }
-  };
+  }
 
   return (
     <div className="flex h-full relative">
@@ -289,24 +298,17 @@ export function AppWorkspace() {
         className="flex-1 bg-background"
         style={{ minWidth: `${Math.max(CANVAS_MIN, canvasWidth)}px` }}
       >
-        <div className="flex-1 w-full h-full p-4 flex flex-col gap-4">
+        <div className="flex-1 w-full">
+        <Button
+          onClick={() => {
+            handleOpenPDF();
+          }}
+          className="px-3 py-1 text-sm bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90"
+          title="打开PDF"
+        >
+          📁
+        </Button>
           <InfiniteCanvas />
-          <Button
-            onClick={() => {
-              handleOpenPDF();
-            }}
-            className="px-3 py-1 text-sm bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90"
-          >
-            <span className="text-xs">打开PDF</span>
-          </Button>
-          <Button
-            onClick={() => {
-              handleExecuteSh();
-            }}
-            className="px-3 py-1 text-sm bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90"
-          >
-            <span className="text-xs">执行Shell命令</span>
-          </Button>
         </div>
       </div>
     </div>
