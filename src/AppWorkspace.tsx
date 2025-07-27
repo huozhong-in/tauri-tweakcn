@@ -47,11 +47,26 @@ async function handlePreviewAppScreenshot() {
     }
   }
   
-  // 激活PDF阅读器窗口
+  // 激活PDF阅读器窗口，即使它被最小化了
   const appleScript = `
-    tell application "Preview"
-      activate
-    end tell
+    try
+      tell application "Preview"
+        -- 检查应用是否有窗口
+        if (count of windows) > 0 then
+          -- 取消所有最小化的窗口
+          repeat with win in windows
+            if miniaturized of win then
+              set miniaturized of win to false
+            end if
+          end repeat
+        end if
+        -- 激活应用
+        activate
+      end tell
+      return "success"
+    on error errorMessage
+      return "error: " & errorMessage
+    end try
   `
   const command = Command.create("run-applescript", ["-e", appleScript])
   const output = await command.execute()
