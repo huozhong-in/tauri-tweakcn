@@ -9,11 +9,13 @@ import { InfiniteCanvas } from "./InfiniteCanvas"
 import { useSidebar } from "@/components/ui/sidebar"
 import { ScrollArea } from "./components/ui/scroll-area"
 import { Button } from "./components/ui/button"
-import { openPath } from "@tauri-apps/plugin-opener"
+import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener"
 import { open, Command } from "@tauri-apps/plugin-shell"
 import {
   checkAccessibilityPermission,
   requestAccessibilityPermission,
+  checkScreenRecordingPermission,
+  requestScreenRecordingPermission,
 } from "tauri-plugin-macos-permissions-api"
 import {
   getCurrentWindow,
@@ -28,10 +30,60 @@ import {
   getWindowScreenshot,
 } from "tauri-plugin-screenshots-api"
 
-async function captureScreen() {
+// const pdfPath =
+//   "/Users/dio/workspace/temp/pdf-embed-react-examples/public/sample2.pdf"
+const pdfPath = '/Users/dio/Downloads/AI代理的上下文工程：构建Manus的经验教训.pdf';
+
+async function handlePreviewAppScreenshot() {
+  const hasPermission = await checkScreenRecordingPermission()
+  if (!hasPermission) {
+    // 如果没有屏幕录制权限，尝试请求权限
+    const permissionGranted = await requestScreenRecordingPermission()
+    if (!permissionGranted) {
+      console.log(
+        "未能获取屏幕录制权限，无法截图。请在系统设置中手动开启。"
+      )
+      return
+    }
+  }
+  
+  // 激活PDF阅读器窗口
+  const appleScript = `
+    tell application "Preview"
+      activate
+    end tell
+  `
+  const command = Command.create("run-applescript", ["-e", appleScript])
+  const output = await command.execute()
+  if (output.code !== 0) {
+    console.error("AppleScript执行失败:", output.stderr)
+    return
+  }
+  // 取得pdfPath中文件名的部分
+  const pdfFileName = pdfPath.split("/").pop() || ""
+  if (pdfFileName === "") {
+    console.error("无法获取PDF文件名，无法进行截图")
+    return
+  }
   const windows = await getScreenshotableWindows()
-  const path = await getWindowScreenshot(windows[0].id)
-  console.log(path) // xx/tauri-plugin-screenshots/window-{id}.png
+  if (windows.length === 0) {
+    console.error("未找到可截图的窗口")
+    return
+  }
+  let window_id = -1
+  windows.forEach((win) => {
+    console.log(`窗口ID: ${win.id}, 名称: ${win.title}`)
+    if (win.title.includes(pdfFileName)) {
+      window_id = win.id
+    }
+  })
+  if (window_id === -1) {
+    console.error(`未找到包含 "${pdfFileName}" 的窗口`)
+    return
+  }
+  const path = await getWindowScreenshot(window_id)
+  // console.log(path) // xx/tauri-plugin-screenshots/window-{id}.png
+  revealItemInDir(path)
 }
 async function ensureAccessibilityPermission() {
   try {
@@ -203,9 +255,7 @@ export function AppWorkspace() {
 
   const handleOpenPDF = async () => {
     try {
-      const pdfPath =
-        "/Users/dio/workspace/temp/pdf-embed-react-examples/public/sample2.pdf"
-      // const pdfPath = '/Users/dio/Downloads/AI代理的上下文工程：构建Manus的经验教训.pdf';
+      
       console.log("尝试打开PDF文件:", pdfPath)
       await openPath(pdfPath)
     } catch (error) {
@@ -278,6 +328,7 @@ export function AppWorkspace() {
         // 计算预览app的逻辑中心点坐标
         setPreviewAppCenterX(scaledHalfWidth + Math.round((scaledMonitorWidth - scaledHalfWidth) / 2))
         setPreviewAppCenterY(Math.round(scaledMonitorHeight / 2))
+        // refer https://apple.stackexchange.com/questions/376928/apple-script-how-do-i-check-if-the-bounds-of-a-window-are-equal-to-specific-va
         const appleScript = `
           tell application "Preview"
             if (bounds of front window) is not equal to {${scaledHalfWidth}, 0, ${scaledMonitorWidth}, ${scaledMonitorHeight}} then
@@ -305,47 +356,6 @@ export function AppWorkspace() {
 
   const handleScrollPDF = async (direction: "up" | "down") => {
     // 控制PDF阅读器翻页
-    // 如果阅读器不在“最前面”，则先激活它
-    const appleScript = `
-      tell application "Preview"
-        activate
-      end tell
-    `
-    // const appleScript = `
-    //   try
-    //     tell application "System Events"
-    //       -- 获取指定坐标下的窗口
-    //       set windowAtPoint to window at {${previewAppCenterX}, ${previewAppCenterY}}
-    //       set appName to name of application process of windowAtPoint
-    //     end tell
-        
-    //     if appName is "Preview" then
-    //       return "preview_at_coordinates"
-    //     else
-    //       tell application "Preview"
-    //         activate
-    //       end tell
-    //       return "activated_preview"
-    //     end if
-        
-    //   on error errorMessage
-    //     -- 如果无法获取坐标下的窗口，直接激活Preview
-    //     tell application "Preview"
-    //       activate
-    //     end tell
-    //     return "activated_fallback"
-    //   end try
-    // `
-    const command = Command.create("run-applescript", ["-e", appleScript])
-    const output = await command.execute()
-    if (output.code !== 0) {
-      console.error("AppleScript执行失败:", output.stderr)
-      return
-    }
-    console.log("AppleScript执行结果:", output.stdout.trim())
-    // 抢回焦点
-    const appWindow = Window.getCurrent()
-    await appWindow.setFocus()
     // 向PDF阅读器的逻辑中心点的坐标发送滚动事件
     const response = await fetch("http://127.0.0.1:60315/scroll", {
       method: "POST",
@@ -363,6 +373,23 @@ export function AppWorkspace() {
       console.error("滚动PDF时发生错误:", response.statusText);
     }
   };
+
+  const handleActivePreviewApp = async () => {
+    // 激活PDF阅读器窗口
+    const appleScript = `
+      tell application "Preview"
+        activate
+      end tell
+    `
+    const command = Command.create("run-applescript", ["-e", appleScript])
+    const output = await command.execute()
+    if (output.code !== 0) {
+      console.error("AppleScript执行失败:", output.stderr)
+      return
+    }
+    // 抢回焦点
+    await Window.getCurrent().setFocus()
+  }
 
   return (
     <div className="flex h-full relative">
@@ -479,19 +506,41 @@ export function AppWorkspace() {
       >
         <div className="flex-1 w-full h-full p-4 flex flex-col gap-4">
           <InfiniteCanvas />
-          <Button
-            onClick={() => {
-              handleControlPreviewApp()
-            }}
-            className="px-3 py-1 text-sm bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90"
-          >
-            <span className="text-xs">打开PDF并重排窗口</span>
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => {
+                handleControlPreviewApp()
+              }}
+              variant={"default"}
+              className="flex-1 px-3 py-1 text-sm"
+            >
+              <span className="text-xs">打开PDF并重排窗口</span>
+            </Button>
+            <Button
+              onClick={() => {
+                handleActivePreviewApp()
+              }}
+              variant={"outline"}
+              className="flex-1 px-3 py-1 text-sm"
+            >
+              <span className="text-xs">寻找PDF阅读器窗口</span>
+            </Button>
+            <Button
+              onClick={() => {
+                handlePreviewAppScreenshot()
+              }}
+              variant={"outline"}
+              className="flex-1 px-3 py-1 text-sm"
+            >
+              <span className="text-xs">PDF阅读器窗口截图</span>
+            </Button>
+          </div>
           <Button
             onClick={() => {
               handleScrollPDF("up")
             }}
-            className="px-3 py-1 text-sm bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90"
+            variant={"secondary"}
+            className="px-3 py-1 text-sm"
           >
             <span className="text-xs">PDF阅读器向上滑动</span>
           </Button>
@@ -500,10 +549,12 @@ export function AppWorkspace() {
             onClick={() => {
               handleScrollPDF("down")
             }}
-            className="px-3 py-1 text-sm bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90"
+            variant={"secondary"}
+            className="px-3 py-1 text-sm"
           >
             <span className="text-xs">PDF阅读器向下滑动</span>
           </Button>
+          
         </div>
       </div>
     </div>
