@@ -304,7 +304,49 @@ export function AppWorkspace() {
   }
 
   const handleScrollPDF = async (direction: "up" | "down") => {
-    // 需要事先取得预览app的逻辑中心点的坐标
+    // 控制PDF阅读器翻页
+    // 如果阅读器不在“最前面”，则先激活它
+    const appleScript = `
+      tell application "Preview"
+        activate
+      end tell
+    `
+    // const appleScript = `
+    //   try
+    //     tell application "System Events"
+    //       -- 获取指定坐标下的窗口
+    //       set windowAtPoint to window at {${previewAppCenterX}, ${previewAppCenterY}}
+    //       set appName to name of application process of windowAtPoint
+    //     end tell
+        
+    //     if appName is "Preview" then
+    //       return "preview_at_coordinates"
+    //     else
+    //       tell application "Preview"
+    //         activate
+    //       end tell
+    //       return "activated_preview"
+    //     end if
+        
+    //   on error errorMessage
+    //     -- 如果无法获取坐标下的窗口，直接激活Preview
+    //     tell application "Preview"
+    //       activate
+    //     end tell
+    //     return "activated_fallback"
+    //   end try
+    // `
+    const command = Command.create("run-applescript", ["-e", appleScript])
+    const output = await command.execute()
+    if (output.code !== 0) {
+      console.error("AppleScript执行失败:", output.stderr)
+      return
+    }
+    console.log("AppleScript执行结果:", output.stdout.trim())
+    // 抢回焦点
+    const appWindow = Window.getCurrent()
+    await appWindow.setFocus()
+    // 向PDF阅读器的逻辑中心点的坐标发送滚动事件
     const response = await fetch("http://127.0.0.1:60315/scroll", {
       method: "POST",
       headers: {
