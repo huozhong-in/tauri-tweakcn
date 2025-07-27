@@ -199,8 +199,24 @@ export function AppWorkspace() {
         end if
         -- 激活应用
         activate
+        
+        -- 获取前台窗口的信息
+        if (count of windows) > 0 then
+          set frontWin to front window
+          set winBounds to bounds of frontWin
+          set winX to item 1 of winBounds
+          set winY to item 2 of winBounds
+          set winRight to item 3 of winBounds
+          set winBottom to item 4 of winBounds
+          set winWidth to winRight - winX
+          set winHeight to winBottom - winY
+          
+          -- 返回结构化信息
+          return "success|x:" & winX & "|y:" & winY & "|width:" & winWidth & "|height:" & winHeight & "|bounds:" & winX & "," & winY & "," & winRight & "," & winBottom
+        else
+          return "success|no_windows"
+        end if
       end tell
-      return "success"
     on error errorMessage
       return "error: " & errorMessage
     end try
@@ -211,6 +227,46 @@ export function AppWorkspace() {
       console.error("AppleScript执行失败:", output.stderr)
       return
     }
+    
+    // 解析窗口信息
+    const result = output.stdout.trim()
+    console.log("AppleScript 原始输出:", result)
+    
+    if (result.startsWith("success|")) {
+      const parts = result.split("|")
+      if (parts.length > 1 && parts[1] !== "no_windows") {
+        const windowInfo = {
+          x: 0,
+          y: 0,
+          width: 0,
+          height: 0,
+          bounds: ""
+        }
+        
+        // 解析各个部分
+        parts.slice(1).forEach(part => {
+          if (part.startsWith("x:")) windowInfo.x = parseInt(part.substring(2))
+          if (part.startsWith("y:")) windowInfo.y = parseInt(part.substring(2))
+          if (part.startsWith("width:")) windowInfo.width = parseInt(part.substring(6))
+          if (part.startsWith("height:")) windowInfo.height = parseInt(part.substring(7))
+          if (part.startsWith("bounds:")) windowInfo.bounds = part.substring(7)
+        })
+        
+        console.log("Preview窗口信息:", windowInfo)
+        console.log(`窗口位置: (${windowInfo.x}, ${windowInfo.y})`)
+        console.log(`窗口大小: ${windowInfo.width} x ${windowInfo.height}`)
+        console.log(`窗口边界: ${windowInfo.bounds}`)
+
+        // 计算预览app的逻辑中心点坐标
+        setPreviewAppCenterX(windowInfo.x + Math.floor(windowInfo.width / 2))
+        setPreviewAppCenterY(windowInfo.y + Math.floor(windowInfo.height / 2))
+      } else {
+        console.log("Preview应用没有窗口")
+      }
+    } else if (result.startsWith("error:")) {
+      console.error("AppleScript执行错误:", result)
+    }
+    
     // 抢回焦点
     await Window.getCurrent().setFocus()
   }
@@ -245,7 +301,7 @@ export function AppWorkspace() {
     }
     let window_id = -1
     windows.forEach((win) => {
-      console.log(`窗口ID: ${win.id}, 名称: ${win.title}`)
+      console.log(`APPNAME: ${win.appName}, TITLE: ${win.title}，窗口ID: ${win.id}`)
       if (win.title.includes(pdfFileName)) {
         window_id = win.id
       }
@@ -293,16 +349,16 @@ export function AppWorkspace() {
     }
   }
 
-  const handleExecuteSh = async () => {
-    try {
-      // 执行Shell命令
-      const cmd = Command.create("python-version", ["--version"])
-      const output = await cmd.execute()
-      console.log(output)
-    } catch (error) {
-      console.error("执行Shell命令时发生错误:", error)
-    }
-  }
+  // const handleExecuteSh = async () => {
+  //   try {
+  //     // 执行Shell命令
+  //     const cmd = Command.create("python-version", ["--version"])
+  //     const output = await cmd.execute()
+  //     console.log(output)
+  //   } catch (error) {
+  //     console.error("执行Shell命令时发生错误:", error)
+  //   }
+  // }
 
   const handleControlPreviewApp = async () => {
     try {
@@ -313,7 +369,7 @@ export function AppWorkspace() {
       console.log("权限检查结果:", hasPermission)
 
       if (hasPermission) {
-        // --- 第1步：打开PDF并抢回焦点 (使用我们之前讨论的稳定版方案) ---
+        // --- 第1步：打开PDF并抢回焦点 ---
         await handleOpenPDF()
         await new Promise((resolve) => setTimeout(resolve, 1000)) // 短暂等待，确保“预览”已启动
         const appWindow = Window.getCurrent()
@@ -349,15 +405,15 @@ export function AppWorkspace() {
         // x1 = 左上角x, y1 = 左上角y
         // x2 = 右下角x, y2 = 右下角y
         // AppleScript使用LogicalPosition和LogicalSize来处理窗口位置和大小，需要用scaleFactor来转换
-        const scaledHalfWidth = Math.round(halfWidth / monitor.scaleFactor)
-        const scaledMonitorWidth = Math.round(monitorSize.width / monitor.scaleFactor)
-        const scaledMonitorHeight = Math.round(monitorSize.height / monitor.scaleFactor)
+        const scaledHalfWidth = Math.floor(halfWidth / monitor.scaleFactor)
+        const scaledMonitorWidth = Math.floor(monitorSize.width / monitor.scaleFactor)
+        const scaledMonitorHeight = Math.floor(monitorSize.height / monitor.scaleFactor)
         console.log(
           `AppleScript将设置“预览”窗口位置为: {左上角x:${scaledHalfWidth}, 左上角y:0, 右下角x:${scaledMonitorWidth}, 右下角y:${scaledMonitorHeight}}`
         )
         // 计算预览app的逻辑中心点坐标
-        setPreviewAppCenterX(scaledHalfWidth + Math.round((scaledMonitorWidth - scaledHalfWidth) / 2))
-        setPreviewAppCenterY(Math.round(scaledMonitorHeight / 2))
+        setPreviewAppCenterX(scaledHalfWidth + Math.floor((scaledMonitorWidth - scaledHalfWidth) / 2))
+        setPreviewAppCenterY(Math.floor(scaledMonitorHeight / 2))
         // refer https://apple.stackexchange.com/questions/376928/apple-script-how-do-i-check-if-the-bounds-of-a-window-are-equal-to-specific-va
         const appleScript = `
           tell application "Preview"
@@ -567,10 +623,10 @@ export function AppWorkspace() {
             />
             <Separator orientation="vertical" />
             <Slider className="flex-1"
-              min={4}
-              defaultValue={[22]}
+              min={1}
+              defaultValue={[25]}
               max={50}
-              step={2}
+              step={1}
               value={[scrollSpeed]}
               onValueChange={(value) => {
                 setScrollSpeed(value[0])
