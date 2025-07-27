@@ -34,106 +34,6 @@ import {
 //   "/Users/dio/workspace/temp/pdf-embed-react-examples/public/sample2.pdf"
 const pdfPath = '/Users/dio/Downloads/AI代理的上下文工程：构建Manus的经验教训.pdf';
 
-async function handlePreviewAppScreenshot() {
-  const hasPermission = await checkScreenRecordingPermission()
-  if (!hasPermission) {
-    // 如果没有屏幕录制权限，尝试请求权限
-    const permissionGranted = await requestScreenRecordingPermission()
-    if (!permissionGranted) {
-      console.log(
-        "未能获取屏幕录制权限，无法截图。请在系统设置中手动开启。"
-      )
-      return
-    }
-  }
-  
-  // 激活PDF阅读器窗口，即使它被最小化了
-  const appleScript = `
-    try
-      tell application "Preview"
-        -- 检查应用是否有窗口
-        if (count of windows) > 0 then
-          -- 取消所有最小化的窗口
-          repeat with win in windows
-            if miniaturized of win then
-              set miniaturized of win to false
-            end if
-          end repeat
-        end if
-        -- 激活应用
-        activate
-      end tell
-      return "success"
-    on error errorMessage
-      return "error: " & errorMessage
-    end try
-  `
-  const command = Command.create("run-applescript", ["-e", appleScript])
-  const output = await command.execute()
-  if (output.code !== 0) {
-    console.error("AppleScript执行失败:", output.stderr)
-    return
-  }
-  // 取得pdfPath中文件名的部分
-  const pdfFileName = pdfPath.split("/").pop() || ""
-  if (pdfFileName === "") {
-    console.error("无法获取PDF文件名，无法进行截图")
-    return
-  }
-  const windows = await getScreenshotableWindows()
-  if (windows.length === 0) {
-    console.error("未找到可截图的窗口")
-    return
-  }
-  let window_id = -1
-  windows.forEach((win) => {
-    console.log(`窗口ID: ${win.id}, 名称: ${win.title}`)
-    if (win.title.includes(pdfFileName)) {
-      window_id = win.id
-    }
-  })
-  if (window_id === -1) {
-    console.error(`未找到包含 "${pdfFileName}" 的窗口`)
-    return
-  }
-  const path = await getWindowScreenshot(window_id)
-  // console.log(path) // xx/tauri-plugin-screenshots/window-{id}.png
-  revealItemInDir(path)
-}
-async function ensureAccessibilityPermission() {
-  try {
-    console.log("检查辅助功能权限...")
-    let hasPermission = await checkAccessibilityPermission()
-    console.log("当前权限状态:", hasPermission)
-
-    if (!hasPermission) {
-      console.log("权限不足，请求权限...")
-      // 如果没有权限，发起请求
-      const permissionGranted = await requestAccessibilityPermission()
-      console.log("权限请求结果:", permissionGranted)
-
-      if (!permissionGranted) {
-        // 用户在弹窗中选择了"拒绝"，或者没有完成授权
-        console.log("用户拒绝或未完成权限授权")
-        alert(
-          "未能获取辅助功能权限，无法控制其他应用。请在系统设置中手动开启。"
-        )
-        return false
-      }
-      // 更新权限状态
-      hasPermission = await checkAccessibilityPermission()
-      console.log("权限更新后状态:", hasPermission)
-    }
-
-    return hasPermission
-  } catch (error) {
-    console.error("权限检查过程中发生错误:", error)
-    const errorMessage = error instanceof Error ? error.message : "未知错误"
-    alert(`权限检查失败: ${errorMessage}`)
-    return false
-  }
-}
-
 interface Message {
   id: string
   content: string
@@ -278,6 +178,116 @@ export function AppWorkspace() {
     }
   }
 
+  const handleActivePreviewApp = async () => {
+  // 激活PDF阅读器窗口
+    const appleScript = `
+    try
+      tell application "Preview"
+        -- 检查应用是否有窗口
+        if (count of windows) > 0 then
+          -- 取消所有最小化的窗口
+          repeat with win in windows
+            if miniaturized of win then
+              set miniaturized of win to false
+            end if
+          end repeat
+        end if
+        -- 激活应用
+        activate
+      end tell
+      return "success"
+    on error errorMessage
+      return "error: " & errorMessage
+    end try
+  `
+    const command = Command.create("run-applescript", ["-e", appleScript])
+    const output = await command.execute()
+    if (output.code !== 0) {
+      console.error("AppleScript执行失败:", output.stderr)
+      return
+    }
+    // 抢回焦点
+    await Window.getCurrent().setFocus()
+  }
+
+  async function handlePreviewAppScreenshot() {
+    // 截屏
+    const hasPermission = await checkScreenRecordingPermission()
+    if (!hasPermission) {
+      // 如果没有屏幕录制权限，尝试请求权限
+      const permissionGranted = await requestScreenRecordingPermission()
+      if (!permissionGranted) {
+        console.log(
+          "未能获取屏幕录制权限，无法截图。请在系统设置中手动开启。"
+        )
+        return
+      }
+    }
+    
+    // 激活PDF阅读器窗口，即使它被最小化了
+    handleActivePreviewApp()
+
+    // 取得pdfPath中文件名的部分
+    const pdfFileName = pdfPath.split("/").pop() || ""
+    if (pdfFileName === "") {
+      console.error("无法获取PDF文件名，无法进行截图")
+      return
+    }
+    const windows = await getScreenshotableWindows()
+    if (windows.length === 0) {
+      console.error("未找到可截图的窗口")
+      return
+    }
+    let window_id = -1
+    windows.forEach((win) => {
+      console.log(`窗口ID: ${win.id}, 名称: ${win.title}`)
+      if (win.title.includes(pdfFileName)) {
+        window_id = win.id
+      }
+    })
+    if (window_id === -1) {
+      console.error(`未找到包含 "${pdfFileName}" 的窗口`)
+      return
+    }
+    const path = await getWindowScreenshot(window_id)
+    // console.log(path) // xx/tauri-plugin-screenshots/window-{id}.png
+    revealItemInDir(path)
+  }
+
+  async function ensureAccessibilityPermission() {
+    try {
+      console.log("检查辅助功能权限...")
+      let hasPermission = await checkAccessibilityPermission()
+      console.log("当前权限状态:", hasPermission)
+
+      if (!hasPermission) {
+        console.log("权限不足，请求权限...")
+        // 如果没有权限，发起请求
+        const permissionGranted = await requestAccessibilityPermission()
+        console.log("权限请求结果:", permissionGranted)
+
+        if (!permissionGranted) {
+          // 用户在弹窗中选择了"拒绝"，或者没有完成授权
+          console.log("用户拒绝或未完成权限授权")
+          alert(
+            "未能获取辅助功能权限，无法控制其他应用。请在系统设置中手动开启。"
+          )
+          return false
+        }
+        // 更新权限状态
+        hasPermission = await checkAccessibilityPermission()
+        console.log("权限更新后状态:", hasPermission)
+      }
+
+      return hasPermission
+    } catch (error) {
+      console.error("权限检查过程中发生错误:", error)
+      const errorMessage = error instanceof Error ? error.message : "未知错误"
+      alert(`权限检查失败: ${errorMessage}`)
+      return false
+    }
+  }
+
   const handleExecuteSh = async () => {
     try {
       // 执行Shell命令
@@ -388,23 +398,6 @@ export function AppWorkspace() {
       console.error("滚动PDF时发生错误:", response.statusText);
     }
   };
-
-  const handleActivePreviewApp = async () => {
-    // 激活PDF阅读器窗口
-    const appleScript = `
-      tell application "Preview"
-        activate
-      end tell
-    `
-    const command = Command.create("run-applescript", ["-e", appleScript])
-    const output = await command.execute()
-    if (output.code !== 0) {
-      console.error("AppleScript执行失败:", output.stderr)
-      return
-    }
-    // 抢回焦点
-    await Window.getCurrent().setFocus()
-  }
 
   return (
     <div className="flex h-full relative">
