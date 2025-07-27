@@ -29,6 +29,9 @@ import {
   getScreenshotableWindows,
   getWindowScreenshot,
 } from "tauri-plugin-screenshots-api"
+import { Switch } from "@/components/ui/switch"
+import { Slider } from "@/components/ui/slider"
+import { Separator } from "@/components/ui/separator"
 
 // const pdfPath =
 //   "/Users/dio/workspace/temp/pdf-embed-react-examples/public/sample2.pdf"
@@ -45,6 +48,8 @@ export function AppWorkspace() {
   // 使用变量来保存预览app逻辑中心点的坐标
   const [previewAppCenterX, setPreviewAppCenterX] = useState(0)
   const [previewAppCenterY, setPreviewAppCenterY] = useState(0)
+  const [isReverseScroll, setIsReverseScroll] = useState(false)
+  const [scrollSpeed, setScrollSpeed] = useState(22)
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -382,6 +387,7 @@ export function AppWorkspace() {
   const handleScrollPDF = async (direction: "up" | "down") => {
     // 控制PDF阅读器翻页
     // 向PDF阅读器的逻辑中心点的坐标发送滚动事件
+    const trueScrollSpeed = isReverseScroll ? -scrollSpeed : scrollSpeed
     const response = await fetch("http://127.0.0.1:60315/scroll", {
       method: "POST",
       headers: {
@@ -390,7 +396,7 @@ export function AppWorkspace() {
       body: JSON.stringify({
         x: previewAppCenterX,
         y: previewAppCenterY,
-        dy: direction === "up" ? -22 : 22,
+        dy: direction === "up" ? -trueScrollSpeed : trueScrollSpeed,
       }),
     });
 
@@ -552,7 +558,26 @@ export function AppWorkspace() {
           >
             <span className="text-xs">PDF阅读器向上滑动</span>
           </Button>
-          
+          <div className="flex items-center gap-2">
+            <span className="text-xs">反向滚动</span>
+            <Switch
+              id="reverse-scroll"
+              checked={isReverseScroll}
+              onCheckedChange={setIsReverseScroll}
+            />
+            <Separator orientation="vertical" />
+            <Slider className="flex-1"
+              min={4}
+              defaultValue={[22]}
+              max={50}
+              step={2}
+              value={[scrollSpeed]}
+              onValueChange={(value) => {
+                setScrollSpeed(value[0])
+              }}
+            />
+            <span className="text-xs">滚动速度: {scrollSpeed}</span>
+          </div>
           <Button
             onClick={() => {
               handleScrollPDF("down")
