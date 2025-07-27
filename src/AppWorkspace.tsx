@@ -75,6 +75,9 @@ interface Message {
 }
 
 export function AppWorkspace() {
+  // 使用变量来保存预览app逻辑中心点的坐标
+  const [previewAppCenterX, setPreviewAppCenterX] = useState(0)
+  const [previewAppCenterY, setPreviewAppCenterY] = useState(0)
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -272,6 +275,9 @@ export function AppWorkspace() {
         console.log(
           `AppleScript将设置“预览”窗口位置为: {左上角x:${scaledHalfWidth}, 左上角y:0, 右下角x:${scaledMonitorWidth}, 右下角y:${scaledMonitorHeight}}`
         )
+        // 计算预览app的逻辑中心点坐标
+        setPreviewAppCenterX(scaledHalfWidth + Math.round((scaledMonitorWidth - scaledHalfWidth) / 2))
+        setPreviewAppCenterY(Math.round(scaledMonitorHeight / 2))
         const appleScript = `
           tell application "Preview"
             if (bounds of front window) is not equal to {${scaledHalfWidth}, 0, ${scaledMonitorWidth}, ${scaledMonitorHeight}} then
@@ -296,6 +302,25 @@ export function AppWorkspace() {
       console.error("控制预览应用时发生错误:", error)
     }
   }
+
+  const handleScrollPDF = async (direction: "up" | "down") => {
+    // 需要事先取得预览app的逻辑中心点的坐标
+    const response = await fetch("http://127.0.0.1:60315/scroll", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        x: previewAppCenterX,
+        y: previewAppCenterY,
+        dy: direction === "up" ? -22 : 22,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("滚动PDF时发生错误:", response.statusText);
+    }
+  };
 
   return (
     <div className="flex h-full relative">
@@ -414,27 +439,28 @@ export function AppWorkspace() {
           <InfiniteCanvas />
           <Button
             onClick={() => {
-              handleOpenPDF()
-            }}
-            className="px-3 py-1 text-sm bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90"
-          >
-            <span className="text-xs">打开PDF</span>
-          </Button>
-          <Button
-            onClick={() => {
               handleControlPreviewApp()
             }}
             className="px-3 py-1 text-sm bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90"
           >
-            <span className="text-xs">控制预览应用</span>
+            <span className="text-xs">打开PDF并重排窗口</span>
           </Button>
           <Button
             onClick={() => {
-              handleExecuteSh()
+              handleScrollPDF("up")
             }}
             className="px-3 py-1 text-sm bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90"
           >
-            <span className="text-xs">测试执行Shell命令</span>
+            <span className="text-xs">PDF阅读器向上滑动</span>
+          </Button>
+          
+          <Button
+            onClick={() => {
+              handleScrollPDF("down")
+            }}
+            className="px-3 py-1 text-sm bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90"
+          >
+            <span className="text-xs">PDF阅读器向下滑动</span>
           </Button>
         </div>
       </div>
