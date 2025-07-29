@@ -59,45 +59,21 @@ export function AppWorkspace() {
 
   const [inputValue, setInputValue] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [windowWidth, setWindowWidth] = useState(window.innerWidth)
-  const { state, setOpen } = useSidebar()
-  const isCollapsed = state === "collapsed"
+  // const [windowWidth, setWindowWidth] = useState(window.innerWidth)
+  // const { state, setOpen } = useSidebar()
+  // const isCollapsed = state === "collapsed"
   const [isInfiniteCanvasCollapsed, setIsInfiniteCanvasCollapsed] = useState(false)
   const infiniteCanvasPanelRef = useRef<ImperativePanelHandle>(null)
 
   // 监听窗口大小变化
-  useEffect(() => {
-    const handleResize = () => {
-      setWindowWidth(window.innerWidth)
-    }
+  // useEffect(() => {
+  //   const handleResize = () => {
+  //     setWindowWidth(window.innerWidth)
+  //   }
 
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
-  }, [])
-
-  // 响应式显示逻辑 
-  // 各种组合的最小宽度需求
-  const SIDEBAR_COLLAPSED = 60
-  const SIDEBAR_EXPANDED = 280
-  const FILELIST_MIN = 260
-  const CHATUI_MIN = 400
-  const CANVAS_MIN = 380
-
-  // 侧边栏自动收起逻辑（单向：只收起，不自动弹开）
-  const shouldAutoCollapseSidebar = windowWidth < (SIDEBAR_EXPANDED + FILELIST_MIN + CHATUI_MIN + CANVAS_MIN)
-  
-  // 自动收起侧边栏的逻辑（单向：只收起，不自动弹开）
-  useEffect(() => {
-    if (shouldAutoCollapseSidebar && !isCollapsed) {
-      setOpen(false)
-    }
-  }, [shouldAutoCollapseSidebar, isCollapsed, setOpen])
-  
-  // 当前实际的侧边栏宽度
-  const currentSidebarWidth = isCollapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED
-
-  // 计算主工作区可用宽度（总宽度减去侧边栏宽度）
-  const workspaceWidth = windowWidth - currentSidebarWidth
+  //   window.addEventListener("resize", handleResize)
+  //   return () => window.removeEventListener("resize", handleResize)
+  // }, [])
 
   // 处理无限画布面板的收起/展开
   const handleCanvasToggle = () => {
@@ -110,9 +86,7 @@ export function AppWorkspace() {
     }
   }
 
-  // 判断是否显示画布
-  const shouldShowCanvas = true // workspaceWidth >= currentSidebarWidth +FILELIST_MIN + CHATUI_MIN + CANVAS_MIN
-
+  
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return
 
@@ -156,61 +130,35 @@ export function AppWorkspace() {
               </div> */}
               {/* 文件列表区 - 始终显示 */}
               <div
-                className={`flex flex-auto h-full border-r bg-background`}
+                className={`flex flex-auto h-full bg-background`}
               >
                 <FileList />
-                     
               </div>
             </ResizablePanel>
-            <ResizableHandle withHandle />
+            <ResizableHandle withHandle className="bg-primary" />
             <ResizablePanel defaultSize={30} minSize={20}>
               <div className="flex flex-col h-full p-1">
                 {/* <span className="font-semibold">Two</span> */}
                 <RagLocal />
-                <div className="m-1 p-2 bg-muted/10 rounded-lg text-xs space-y-2">
-                  <div className="font-semibold text-foreground mb-2">📊 响应式布局状态</div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>窗口宽度: <span className="font-mono text-primary">{windowWidth}px</span></div>
-                    <div>侧边栏: <span className="font-mono text-primary">{currentSidebarWidth}px</span></div>
-                    <div>工作区: <span className="font-mono text-primary">{workspaceWidth}px</span></div>
-                    <div>自动收起: <span className="font-mono text-primary">{shouldAutoCollapseSidebar ? "是" : "否"}</span></div>
-                  </div>
-                  <div className="border-t pt-2 mt-2">
-                    <div className="grid grid-cols-3 gap-1 text-xs">
-                      <div className={`p-1 rounded bg-green-500/20 text-green-700`}>
-                        文件列表<br/>
-                        <span className="font-mono">px</span>
-                      </div>
-                      <div className={`p-1 rounded bg-green-500/20 text-green-700`}>
-                        ChatUI<br/>
-                        <span className="font-mono">px</span>
-                      </div>
-                      <div className={`p-1 rounded ${shouldShowCanvas ? 'bg-green-500/20 text-green-700' : 'bg-red-500/20 text-red-700'}`}>
-                        画布<br/>
-                        <span className="font-mono">px</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </div>
             </ResizablePanel>
           </ResizablePanelGroup>
         </ResizablePanel>
-        <ResizableHandle withHandle />
+        <ResizableHandle withHandle className="bg-primary" />
         <ResizablePanel defaultSize={30} minSize={20}>
           {/* <div className="flex h-[400px] items-center justify-center p-6">
             <span className="font-semibold">Three</span>
           </div> */}
           {/* ChatUI区 - 始终显示 */}
           <div
-            className={`flex flex-col flex-auto h-full overflow-hidden border-r`}
+            className={`flex flex-col flex-auto h-full overflow-hidden`}
           >
             {/* Header */}
             <div className="border-b p-2 flex flex-row h-[50px] relative">
               <div className="text-md text-muted-foreground">Project Planning Assistant</div>
-              <div className="absolute bottom-1 right-2 z-10">
+              <div className="absolute bottom-0 right-1 z-10">
                 <PanelRightIcon 
-                  className={`h-5 w-5 cursor-pointer hover:bg-muted/50 rounded p-0.5 ${isInfiniteCanvasCollapsed ? "rotate-180" : ""}`} 
+                  className={`size-7 cursor-pointer hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 rounded-md p-1.5 transition-all ${isInfiniteCanvasCollapsed ? "rotate-180" : ""}`} 
                   onClick={handleCanvasToggle} />
               </div>
             </div>
@@ -256,7 +204,7 @@ export function AppWorkspace() {
                   即时标签感知
                 </span>
                 {dynamicTags.map((tag) => (
-                  <Badge key={tag} variant="outline" className="text-xs px-2 rounded-xl">
+                  <Badge key={tag} variant="outline" className="text-xs px-2 rounded-xl cursor-pointer hover:bg-accent hover:text-accent-foreground transition-all">
                     {tag}
                   </Badge>
                 ))}
@@ -273,7 +221,7 @@ export function AppWorkspace() {
             </div>
           </div>
         </ResizablePanel>
-        <ResizableHandle withHandle />
+        <ResizableHandle withHandle className="bg-primary" />
         <ResizablePanel 
           ref={infiniteCanvasPanelRef}
           defaultSize={40} 

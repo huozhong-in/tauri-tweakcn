@@ -183,7 +183,7 @@ export function FileList() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="border-b p-2 shrink-0 h-[50px]">
+      <div className="border-b p-3 shrink-0 h-[50px]">
         <p className="text-sm font-semibold">标签搜索结果</p>
         <p className="text-xs text-muted-foreground">
           固定文件以便在对话中参考
