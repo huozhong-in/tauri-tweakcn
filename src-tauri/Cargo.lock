@@ -4788,6 +4788,7 @@ dependencies = [
 name = "temp-tauri-app"
 version = "0.1.0"
 dependencies = [
+ "log",
  "objc2 0.6.1",
  "objc2-app-kit 0.3.1",
  "serde",
