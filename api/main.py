@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import pyautogui
 from Quartz.CoreGraphics import CGEventCreateScrollWheelEvent, CGEventPost, CGEventSetLocation, kCGEventSourceStateHIDSystemState, kCGScrollEventUnitPixel
-from Quartz import CGPoint
+from Quartz import CGPoint, kCGWindowOwnerName, kCGWindowName, kCGWindowNumber, kCGWindowBounds, kCGWindowListOptionOnScreenOnly, kCGWindowListExcludeDesktopElements, CGWindowListCopyWindowInfo, kCGNullWindowID
 
 class ScrollRequest(BaseModel):
     x: int
@@ -40,6 +40,55 @@ def send_scroll_at_point(x, y, dy):
     # Reset to original location
     pyautogui.moveTo(ori_pos.x, ori_pos.y)
 
+class WindowBounds(BaseModel):
+    x: int
+    y: int
+    width: int
+    height: int
+
+class WindowInfo(BaseModel):
+    application_name: str
+    window_name: str
+    window_id: int
+    bounds: WindowBounds
+
+def get_window_list():
+    # Define options for window listing:
+    # kCGWindowListOptionOnScreenOnly: Only include windows that are currently visible on screen.
+    # kCGWindowListExcludeDesktopElements: Exclude elements like the desktop background and icons.
+    options = kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements
+
+    # Get the window information list
+    window_list = CGWindowListCopyWindowInfo(options, kCGNullWindowID)
+
+    windows = []
+    for window_info in window_list:
+        # Extract relevant information
+        owner_name = window_info.get(kCGWindowOwnerName, "Unknown Application")
+        window_name = window_info.get(kCGWindowName, "Untitled Window")
+        window_id = window_info.get(kCGWindowNumber)
+        bounds_dict = window_info.get(kCGWindowBounds, {})
+        
+        # Create WindowBounds object
+        window_bounds = WindowBounds(
+            x=int(bounds_dict.get('X', 0)),
+            y=int(bounds_dict.get('Y', 0)),
+            width=int(bounds_dict.get('Width', 0)),
+            height=int(bounds_dict.get('Height', 0))
+        )
+        
+        # Create WindowInfo object
+        window_info_obj = WindowInfo(
+            application_name=owner_name,
+            window_name=window_name,
+            window_id=window_id,
+            bounds=window_bounds
+        )
+        
+        windows.append(window_info_obj)
+    
+    return windows
+
 @app.get("/")
 async def root():
     print("根路径被访问")
@@ -58,7 +107,13 @@ async def scroll_at_point(request: ScrollRequest):
     send_scroll_at_point(request.x, request.y, request.dy)
     return {"message": "Scroll event sent"}
 
+@app.get("/windows")
+async def get_windows():
+    print("获取窗口列表")
+    windows = get_window_list()
+    return {"windows": windows}
+
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=60315, log_level="info")
+    uvicorn.run(app, host="127.0.0.1", port=60316, log_level="info")

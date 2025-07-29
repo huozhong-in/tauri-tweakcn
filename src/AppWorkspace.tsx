@@ -35,7 +35,8 @@ import { Separator } from "@/components/ui/separator"
 
 // const pdfPath =
 //   "/Users/dio/workspace/temp/pdf-embed-react-examples/public/sample2.pdf"
-const pdfPath = '/Users/dio/Downloads/AI代理的上下文工程：构建Manus的经验教训.pdf';
+// const pdfPath = '/Users/dio/Downloads/AI代理的上下文工程：构建Manus的经验教训.pdf';
+const pdfPath = '/Users/dio/Downloads/Context Engineering for AI Agents_ Lessons from Building Manus.pdf';
 
 interface Message {
   id: string
@@ -43,6 +44,22 @@ interface Message {
   type: "incoming" | "outgoing"
   timestamp: Date
 }
+
+interface WindowBounds {
+    x: number
+    y: number
+    width: number
+    height: number
+}
+
+interface WindowInfo {
+  application_name: string
+  window_name: string
+  window_id: number
+  bounds: WindowBounds
+}
+
+
 
 export function AppWorkspace() {
   // 使用变量来保存预览app逻辑中心点的坐标
@@ -173,13 +190,55 @@ export function AppWorkspace() {
     }, 1000)
   }
 
-  const handleOpenPDF = async () => {
+  const handleOpenPDF = async (): Promise<boolean> => {
     try {
-      
       console.log("尝试打开PDF文件:", pdfPath)
       await openPath(pdfPath)
+      // 通过Python API /windows检查PDF阅读器是否已经启动
+      const pdf_file_name = pdfPath.split("/").pop() || ""
+      
+      // 重试机制：最多重试3次
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          await new Promise((resolve) => setTimeout(resolve, 1000)) // 等待1秒钟再尝试
+          const response = await fetch("http://127.0.0.1:60316/windows")
+          if (!response.ok) {
+            throw new Error("无法获取窗口列表，可能是API未启动或网络问题")
+          }
+          const data = await response.json()
+          const windows: WindowInfo[] = data.windows
+          
+          for (const item of windows) {
+            if (item.window_name.includes(pdf_file_name)) {
+              console.log(`PDF阅读器窗口已启动 (第${attempt}次尝试):`, item)
+              return true
+            }
+          }
+          
+          console.log(`PDF阅读器窗口未找到 (第${attempt}次尝试)`)
+          
+          // 如果是最后一次尝试，返回false
+          if (attempt === 3) {
+            console.log("经过3次尝试，PDF阅读器窗口仍未找到")
+            return false
+          }
+          // 否则继续下一次尝试
+          console.log(`将进行第${attempt + 1}次尝试...`)
+          
+        } catch (error) {
+          console.error(`第${attempt}次尝试获取窗口列表失败:`, error)
+          if (attempt === 3) {
+            throw error // 最后一次尝试失败时抛出错误
+          }
+          console.log(`将进行第${attempt + 1}次尝试...`)
+        }
+      }
+      
+      return false
+
     } catch (error) {
       console.error("打开PDF时发生错误:", error)
+      return false
     }
   }
 
@@ -370,8 +429,11 @@ export function AppWorkspace() {
 
       if (hasPermission) {
         // --- 第1步：打开PDF并抢回焦点 ---
-        await handleOpenPDF()
-        await new Promise((resolve) => setTimeout(resolve, 1000)) // 短暂等待，确保“预览”已启动
+        const result = await handleOpenPDF()
+        if (!result) {
+          console.error("未能打开PDF文件")
+          return
+        }
         const appWindow = Window.getCurrent()
         const windowFactor = await getCurrentWindow().scaleFactor();
         console.log("窗口缩放因子:", windowFactor)
@@ -444,7 +506,7 @@ export function AppWorkspace() {
     // 控制PDF阅读器翻页
     // 向PDF阅读器的逻辑中心点的坐标发送滚动事件
     const trueScrollSpeed = isReverseScroll ? -scrollSpeed : scrollSpeed
-    const response = await fetch("http://127.0.0.1:60315/scroll", {
+    const response = await fetch("http://127.0.0.1:60316/scroll", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
