@@ -203,7 +203,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             className="flex flex-col items-start h-auto p-1"
                           >
                             <div className="flex items-center gap-2 w-full">
-                              <task.icon className="h-4 w-4 shrink-0" />
+                              <task.icon className="h-4 w-4 flex-shrink-0" />
                               <span className="font-medium text-sm truncate">
                                 {task.title}
                               </span>
@@ -227,6 +227,29 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarFooter>
         <UserProfileMenu />
       </SidebarFooter>
+
+      {/* Search Dialog */}
+      <CommandDialog open={searchOpen} onOpenChange={setSearchOpen}>
+        <CommandInput placeholder="搜索任务..." />
+        <CommandList>
+          <CommandEmpty>未找到任务。</CommandEmpty>
+          <CommandGroup heading="任务列表">
+            {mockTasksByTime.flatMap((timeGroup) =>
+              timeGroup.tasks.map((task) => (
+                <CommandItem
+                  key={task.id}
+                  onSelect={() => setSearchOpen(false)}
+                >
+                  <task.icon className="mr-2 h-4 w-4" />
+                  <div className="flex flex-col">
+                    <span className="font-medium">{task.title}</span>
+                  </div>
+                </CommandItem>
+              ))
+            )}
+          </CommandGroup>
+        </CommandList>
+      </CommandDialog>
     </Sidebar>
   )
 }

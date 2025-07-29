@@ -71,14 +71,14 @@ function FileItem({ file, onTogglePin, onTagClick }: FileItemProps) {
           {file.tags && file.tags.length > 0 && (
             <div className="flex flex-wrap gap-0.5 mt-1">
               {file.tags.slice(0, 3).map((tag, index) => (
-                <button
+                <Button
                   key={index}
                   className={`inline-block text-[9px] px-1 py-0.5 rounded leading-none cursor-pointer transition-colors ${getTagColorClass(index)}`}
                   title={tag}
                   onClick={(e) => handleTagClick(tag, e)}
                 >
                   {tag.length > 8 ? `${tag.slice(0, 8)}..` : tag}
-                </button>
+                </Button>
               ))}
               {file.tags.length > 3 && (
                 <span className="inline-block bg-muted text-muted-foreground text-[9px] px-1 py-0.5 rounded leading-none">

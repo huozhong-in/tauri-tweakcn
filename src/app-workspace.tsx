@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react"
-import { useSidebar } from "@/components/ui/sidebar"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge";
 import { ChatMessageAvatar } from "@/components/ui/chat-message"
