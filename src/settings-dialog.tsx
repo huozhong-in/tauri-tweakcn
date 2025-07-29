@@ -255,7 +255,7 @@ export function SettingsDialog({ children }: SettingsDialogProps) {
         {children && <div onClick={() => setSettingsOpen(true)}>{children}</div>}
 
         <DialogContent
-          className="overflow-hidden p-0 h-[85vh] w-[85vw] flex"
+          className="flex overflow-hidden p-0 h-[85vh] w-[85vw] "
           aria-describedby="settings-description"
           showCloseButton={true}
         >
@@ -266,7 +266,7 @@ export function SettingsDialog({ children }: SettingsDialogProps) {
           <SidebarProvider className="items-start">
             {/* 左侧导航 */}
             <Sidebar collapsible="none" 
-              className="w-64 border-r flex-shrink-0 hidden md:flex"
+              className="w-64 border-r shrink-0 hidden md:flex"
               >
               {/* <SidebarHeader>
                 <div className="p-4">
@@ -321,8 +321,8 @@ export function SettingsDialog({ children }: SettingsDialogProps) {
             </Sidebar>
 
             {/* 右侧内容区域 */}
-            <main className="flex h-[85vh] flex-1 flex-col overflow-hidden">
-              <div className="flex flex-1 flex-col overflow-y-auto pt-0">
+            <main className="flex flex-col flex-1 h-full overflow-hidden">
+              <div className="flex flex-col flex-1 overflow-y-auto pt-0">
                 <ScrollArea className="h-full">
                   {renderCurrentPage()}
                 </ScrollArea>
