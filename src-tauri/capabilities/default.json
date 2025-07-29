@@ -6,6 +6,7 @@
   "permissions": [
     "core:default",
     "opener:default",
+    "store:default",
     "core:window:default",
     "core:window:allow-set-focus",
     "core:window:allow-set-position",
