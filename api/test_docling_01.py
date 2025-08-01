@@ -147,7 +147,8 @@ def main():
     markdown_path.write_text(doc.export_to_markdown(
         image_mode=ImageRefMode.PLACEHOLDER,
         image_placeholder="<!-- image -->",
-        include_annotations=False,
+        # include_annotations=False,
+        mark_annotations=True,
     ))
 
     # Save HTML with externally referenced pictures
