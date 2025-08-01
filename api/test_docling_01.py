@@ -35,7 +35,7 @@ def main():
     pipeline_options = PdfPipelineOptions()
     pipeline_options.generate_picture_images = True
     pipeline_options.generate_table_images = True
-    # pipeline_options.generate_page_images = True
+    pipeline_options.generate_page_images = True
     pipeline_options.images_scale = IMAGE_RESOLUTION_SCALE
     pipeline_options.do_picture_description = True
     pipeline_options.enable_remote_services=True  # <-- this is required!
@@ -75,6 +75,7 @@ def main():
         output_dir.mkdir(parents=True, exist_ok=True)
     doc_filename = result.input.file.stem
 
+    # 查看文档的元数据
     print(len(result.document.pictures), "pictures found in the document.")
     picture_3 = result.document.pictures[2]
     print(picture_3.prov[0].page_no, "is the page number of picture 3.")
@@ -91,7 +92,7 @@ def main():
     }
     '''
     print(picture_3.get_annotations()[0].text)
-    dump_json_path = output_dir / "test_docling_01.json"
+    dump_json_path = output_dir / f"{doc_filename}.json"
     result.document.save_as_json(
         filename=dump_json_path,
         indent=2,
@@ -100,11 +101,11 @@ def main():
     )
 
     # Save page images，也就是把整页存为一张图片
-    # for page_no, page in result.document.pages.items():
-    #     page_no = page.page_no
-    #     page_image_filename = output_dir / f"{doc_filename}-{page_no}.png"
-    #     with page_image_filename.open("wb") as fp:
-    #         page.image.pil_image.save(fp, format="PNG")
+    for page_no, page in result.document.pages.items():
+        page_no = page.page_no
+        page_image_filename = output_dir / f"{doc_filename}-{page_no}.png"
+        with page_image_filename.open("wb") as fp:
+            page.image.pil_image.save(fp, format="PNG")
 
     # Save images of figures and tables
     table_counter = 0

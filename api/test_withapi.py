@@ -137,7 +137,8 @@ def main():
     # Example using the Granite Vision model with LM Studio:
     # (uncomment the following lines)
     pipeline_options.vlm_options = lms_vlm_options(
-        model="qwen/qwen2.5-vl-7b",
+        model="google/gemma-3-4b",
+        # model="qwen/qwen2.5-vl-7b",
         prompt="OCR the full page to markdown.",
         format=ResponseFormat.MARKDOWN,
     ) 
