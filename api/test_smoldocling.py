@@ -39,6 +39,7 @@ prompt = "Convert this page to docling."
 
 # image = "https://ibm.biz/docling-page-with-list"
 image = "https://ibm.biz/docling-page-with-table"
+# ! 这种方式适合给整张图片做OCR
 
 # Load image resource
 if urlparse(image).scheme != "":  # it is a URL
@@ -73,7 +74,7 @@ doc = DoclingDocument.load_from_doctags(doctags_doc, document_name="SampleDocume
 ## Export as any format
 # Markdown
 markdown_path = pathlib.Path("./test_smoldocling.md")
-markdown_path.write_text(doc.export_to_markdown(image_mode=ImageRefMode.REFERENCED))
+markdown_path.write_text(doc.export_to_markdown(image_mode=ImageRefMode.PLACEHOLDER))
 print("Markdown saved to:", markdown_path)
 
 # HTML
