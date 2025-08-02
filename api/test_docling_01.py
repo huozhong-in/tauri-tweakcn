@@ -2,6 +2,11 @@ from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
     PictureDescriptionApiOptions,
     PdfPipelineOptions,
+    RapidOcrOptions,
+    # TesseractCliOcrOptions,
+    # TesseractOcrOptions,
+    # EasyOcrOptions,
+    # OcrMacOptions,
 )
 from docling.document_converter import (
     DocumentConverter, 
@@ -9,7 +14,7 @@ from docling.document_converter import (
     )
 from docling_core.types.doc import (
     DoclingDocument,
-    DocTagsDocument,
+    # DocTagsDocument,
     ImageRefMode,
     PictureItem,
     TableItem,
@@ -17,6 +22,8 @@ from docling_core.types.doc import (
 from docling.datamodel.document import (
     ConversionResult,
 )
+from huggingface_hub import snapshot_download
+import os
 import logging
 import time
 from pathlib import Path
@@ -49,13 +56,40 @@ def main():
             max_completion_tokens=250,
         ),
         prompt="""
-    You are an assistant tasked with summarizing images for retrieval. 
-    These summaries will be embedded and used to retrieve the raw image. 
-    Give a concise summary of the image that is well optimized for retrieval.
-    """.strip(),
-        timeout=90,
+You are an assistant tasked with summarizing images for retrieval. 
+These summaries will be embedded and used to retrieve the raw image. 
+Give a concise summary of the image that is well optimized for retrieval.
+""".strip(),
+        timeout=180,
     )
 
+    # # Option1: Force full page OCR
+    # pipeline_options.do_ocr = True
+    # pipeline_options.do_table_structure = True
+    # pipeline_options.table_structure_options.do_cell_matching = True
+    # # Any of the OCR options can be used:EasyOcrOptions, TesseractOcrOptions, TesseractCliOcrOptions, OcrMacOptions(Mac only), RapidOcrOptions
+    # # ocr_options = EasyOcrOptions(force_full_page_ocr=True)
+    # # ocr_options = TesseractOcrOptions(force_full_page_ocr=True)
+    # # ocr_options = OcrMacOptions(force_full_page_ocr=True)
+    # # ocr_options = RapidOcrOptions(force_full_page_ocr=True)
+    # ocr_options = TesseractCliOcrOptions(force_full_page_ocr=True, lang=["auto"])
+    # pipeline_options.ocr_options = ocr_options
+
+    # Option2: RapidOCR with custom OCR models
+    print("Downloading RapidOCR models")
+    download_path = snapshot_download(repo_id="SWHL/RapidOCR") # from HuggingFace
+    # Setup RapidOcrOptions for english detection
+    det_model_path = os.path.join(download_path, "PP-OCRv4", "en_PP-OCRv3_det_infer.onnx")
+    rec_model_path = os.path.join(download_path, "PP-OCRv4", "ch_PP-OCRv4_rec_server_infer.onnx")
+    cls_model_path = os.path.join(download_path, "PP-OCRv3", "ch_ppocr_mobile_v2.0_cls_train.onnx")
+    ocr_options = RapidOcrOptions(
+        det_model_path=det_model_path,
+        rec_model_path=rec_model_path,
+        cls_model_path=cls_model_path,
+    )
+    pipeline_options.ocr_options = ocr_options
+    
+    # Start work!
     converter = DocumentConverter(format_options={
         InputFormat.PDF: PdfFormatOption(
             pipeline_options=pipeline_options,
@@ -75,23 +109,24 @@ def main():
         output_dir.mkdir(parents=True, exist_ok=True)
     doc_filename = result.input.file.stem
 
-    # 查看文档的元数据
+    # 查看解析后的文档数据(Pydantic格式)
     print(len(result.document.pictures), "pictures found in the document.")
-    picture_3 = result.document.pictures[2]
-    print(picture_3.prov[0].page_no, "is the page number of picture 3.")
-    print(picture_3.image.model_dump_json(indent=2, exclude=["uri"]))
-    '''
-    "image": {
-        "mimetype": "image/png",
-        "dpi": 144,
-        "size": {
-          "width": 853.0,
-          "height": 414.0
-        },
-        "uri": "data:image/png;base64,..."
-    }
-    '''
-    print(picture_3.get_annotations()[0].text)
+    if len(result.document.pictures) >= 3:
+        picture_3 = result.document.pictures[2]
+        print(picture_3.prov[0].page_no, "is the page number of picture 3.")
+        print(picture_3.image.model_dump_json(indent=2, exclude=["uri"]))
+        '''
+        "image": {
+            "mimetype": "image/png",
+            "dpi": 144,
+            "size": {
+            "width": 853.0,
+            "height": 414.0
+            },
+            "uri": "data:image/png;base64,..."
+        }
+        '''
+        print(picture_3.get_annotations()[0].text)
     dump_json_path = output_dir / f"{doc_filename}.json"
     result.document.save_as_json(
         filename=dump_json_path,
@@ -128,6 +163,7 @@ def main():
                 element.get_image(result.document).save(fp, "PNG")
 
     # Export Document Tags format:
+    # doc_tags: DocTagsDocument = result.document.export_to_doctags()
     # result.document.save_as_doctags(
     #     filename=output_dir / f"{doc_filename}.doctags",
     # )
