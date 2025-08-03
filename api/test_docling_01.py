@@ -41,7 +41,6 @@ def main():
     # with the image field
     pipeline_options = PdfPipelineOptions()
     pipeline_options.generate_picture_images = True
-    pipeline_options.generate_table_images = True
     pipeline_options.generate_page_images = True
     pipeline_options.images_scale = IMAGE_RESOLUTION_SCALE
     pipeline_options.do_picture_description = True
@@ -75,19 +74,20 @@ Give a concise summary of the image that is well optimized for retrieval.
     # ocr_options = TesseractCliOcrOptions(force_full_page_ocr=True, lang=["auto"])
     # pipeline_options.ocr_options = ocr_options
 
-    # Option2: RapidOCR with custom OCR models
-    print("Downloading RapidOCR models")
-    download_path = snapshot_download(repo_id="SWHL/RapidOCR") # from HuggingFace
-    # Setup RapidOcrOptions for english detection
-    det_model_path = os.path.join(download_path, "PP-OCRv4", "en_PP-OCRv3_det_infer.onnx")
-    rec_model_path = os.path.join(download_path, "PP-OCRv4", "ch_PP-OCRv4_rec_server_infer.onnx")
-    cls_model_path = os.path.join(download_path, "PP-OCRv3", "ch_ppocr_mobile_v2.0_cls_train.onnx")
-    ocr_options = RapidOcrOptions(
-        det_model_path=det_model_path,
-        rec_model_path=rec_model_path,
-        cls_model_path=cls_model_path,
-    )
-    pipeline_options.ocr_options = ocr_options
+    # # Option2: RapidOCR with custom OCR models
+    # print("Downloading RapidOCR models")
+    # download_path = snapshot_download(repo_id="SWHL/RapidOCR") # from HuggingFace
+    # # Setup RapidOcrOptions for english detection
+    # det_model_path = os.path.join(download_path, "PP-OCRv4", "en_PP-OCRv3_det_infer.onnx")
+    # rec_model_path = os.path.join(download_path, "PP-OCRv4", "ch_PP-OCRv4_rec_server_infer.onnx")
+    # cls_model_path = os.path.join(download_path, "PP-OCRv3", "ch_ppocr_mobile_v2.0_cls_train.onnx")
+    # ocr_options = RapidOcrOptions(
+    #     det_model_path=det_model_path,
+    #     rec_model_path=rec_model_path,
+    #     cls_model_path=cls_model_path,
+    # )
+    # pipeline_options.do_ocr = True
+    # pipeline_options.ocr_options = ocr_options
     
     # Start work!
     converter = DocumentConverter(format_options={
@@ -98,8 +98,8 @@ Give a concise summary of the image that is well optimized for retrieval.
     start_time = time.time()
     result: ConversionResult = converter.convert(
         # source="/Users/dio/Downloads/Context Engineering for AI Agents_ Lessons from Building Manus.pdf"
-        source="/Users/dio/Downloads/AI代理的上下文工程：构建Manus的经验教训.pdf"
-        # source=Path("layout-parser-paper.pdf"),
+        # source="/Users/dio/Downloads/AI代理的上下文工程：构建Manus的经验教训.pdf"
+        source=Path("layout-parser-paper.pdf"),
     )
     doc: DoclingDocument = result.document
     print(f"Document has {len(doc.pages)} pages.")
@@ -127,20 +127,22 @@ Give a concise summary of the image that is well optimized for retrieval.
         }
         '''
         print(picture_3.get_annotations()[0].text)
+    
+    # Save the document as JSON
     dump_json_path = output_dir / f"{doc_filename}.json"
     result.document.save_as_json(
         filename=dump_json_path,
         indent=2,
-        image_mode=ImageRefMode.REFERENCED, # "uri": "test_docling_01/image_000003_ac172f3.png"
+        image_mode=ImageRefMode.PLACEHOLDER, # "uri": "test_docling_01/image_000003_ac172f3.png"
         artifacts_dir=Path(".")
     )
 
-    # Save page images，也就是把整页存为一张图片
-    for page_no, page in result.document.pages.items():
-        page_no = page.page_no
-        page_image_filename = output_dir / f"{doc_filename}-{page_no}.png"
-        with page_image_filename.open("wb") as fp:
-            page.image.pil_image.save(fp, format="PNG")
+    # # Save page images，也就是把整页存为一张图片
+    # for page_no, page in result.document.pages.items():
+    #     page_no = page.page_no
+    #     page_image_filename = output_dir / f"{doc_filename}-{page_no}.png"
+    #     with page_image_filename.open("wb") as fp:
+    #         page.image.pil_image.save(fp, format="PNG")
 
     # Save images of figures and tables
     table_counter = 0
@@ -168,23 +170,23 @@ Give a concise summary of the image that is well optimized for retrieval.
     #     filename=output_dir / f"{doc_filename}.doctags",
     # )
     
-    # Save markdown with embedded pictures
-    md_filename = output_dir / f"{doc_filename}-with-images-base64.md"
-    result.document.save_as_markdown(md_filename, image_mode=ImageRefMode.EMBEDDED)
+    # # Save markdown with embedded pictures
+    # md_filename = output_dir / f"{doc_filename}-with-images-base64.md"
+    # result.document.save_as_markdown(md_filename, image_mode=ImageRefMode.EMBEDDED)
 
-    # Save markdown with externally referenced pictures
-    md_filename = output_dir / f"{doc_filename}-with-image-refs.md"
-    result.document.save_as_markdown(
-        filename=md_filename, 
-        image_mode=ImageRefMode.REFERENCED,
-        artifacts_dir=Path(".")
-    )
+    # # Save markdown with externally referenced pictures
+    # md_filename = output_dir / f"{doc_filename}-with-image-refs.md"
+    # result.document.save_as_markdown(
+    #     filename=md_filename, 
+    #     image_mode=ImageRefMode.REFERENCED,
+    #     artifacts_dir=Path(".")
+    # )
     # OR: export to markdown
-    markdown_path = output_dir / f"{doc_filename}-without-annotations.md"
+    markdown_path = output_dir / f"{doc_filename}-with-annotations.md"
     markdown_path.write_text(doc.export_to_markdown(
         image_mode=ImageRefMode.PLACEHOLDER,
         image_placeholder="<!-- image -->",
-        # include_annotations=False,
+        include_annotations=True,
         mark_annotations=True,
     ))
 
