@@ -1,6 +1,9 @@
-import { useState, useEffect } from "react"
-import { useSidebar } from "@/components/ui/sidebar"
-import { ScrollArea } from "./components/ui/scroll-area"
+import { 
+  useState, 
+  // useEffect,
+} from "react"
+// import { useSidebar } from "@/components/ui/sidebar"
+// import { ScrollArea } from "./components/ui/scroll-area"
 import { Button } from "./components/ui/button"
 import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener"
 import { open, Command } from "@tauri-apps/plugin-shell"
@@ -26,77 +29,50 @@ import { Switch } from "@/components/ui/switch"
 import { Slider } from "@/components/ui/slider"
 import { Separator } from "@/components/ui/separator"
 
-// const pdfPath =
-//   "/Users/dio/workspace/temp/pdf-embed-react-examples/public/sample2.pdf"
+// const pdfPath = "/Users/dio/workspace/temp/pdf-embed-react-examples/public/sample2.pdf";
 // const pdfPath = '/Users/dio/Downloads/AI代理的上下文工程：构建Manus的经验教训.pdf';
-const pdfPath = '/Users/dio/Downloads/Context Engineering for AI Agents_ Lessons from Building Manus.pdf';
+const pdf_path = '/Users/dio/Downloads/Context Engineering for AI Agents_ Lessons from Building Manus.pdf';
 
-interface WindowBounds {
+
+interface WindowInfo {
   x: number
   y: number
   width: number
   height: number
-}
-
-interface WindowInfo {
-  application_name: string
-  window_name: string
-  window_id: number
-  bounds: WindowBounds
+  bounds: string
 }
 
 export function InfiniteCanvas() {
-  // 使用变量来保存预览app逻辑中心点的坐标
-  const [previewAppCenterX, setPreviewAppCenterX] = useState(0)
-  const [previewAppCenterY, setPreviewAppCenterY] = useState(0)
+  // 使用变量来保存PDF阅读器逻辑中心点的坐标
+  const [pdfReaderCenterX, setPdfReaderCenterX] = useState(0)
+  const [pdfReaderCenterY, setPdfReaderCenterY] = useState(0)
   const [isReverseScroll, setIsReverseScroll] = useState(false)
   const [scrollSpeed, setScrollSpeed] = useState(22)
 
-  const handleOpenPDF = async (): Promise<boolean> => {
+  const getPdfReaderName = async (pdfPath:string): Promise<string> => {
+    const appleScript = `
+tell application "System Events" to get name of (get default application of file "${pdfPath}")
+`
+    const command = Command.create("run-applescript", ["-e", appleScript])
+    const output = await command.execute()
+    console.log("getPdfReaderName() 执行结果:", output)
+    if (output.code !== 0) {
+      console.error("getPdfReaderName()执行失败:", output.stderr)
+      return ""
+    }
+    let result = output.stdout.trim()
+    // 如果是.app结束，则截取掉
+    if (result.endsWith(".app")) {
+      result = result.slice(0, -4)
+    }
+    return result
+  }
+
+  const handleOpenPDF = async (pdfPath: string): Promise<boolean> => {
     try {
       console.log("尝试打开PDF文件:", pdfPath)
       await openPath(pdfPath)
-      // 通过Python API /windows检查PDF阅读器是否已经启动
-      const pdf_file_name = pdfPath.split("/").pop() || ""
-      
-      // 重试机制：最多重试3次
-      for (let attempt = 1; attempt <= 3; attempt++) {
-        try {
-          await new Promise((resolve) => setTimeout(resolve, 1000)) // 等待1秒钟再尝试
-          const response = await fetch("http://127.0.0.1:60316/windows")
-          if (!response.ok) {
-            throw new Error("无法获取窗口列表，可能是API未启动或网络问题")
-          }
-          const data = await response.json()
-          const windows: WindowInfo[] = data.windows
-          
-          for (const item of windows) {
-            if (item.window_name.includes(pdf_file_name)) {
-              console.log(`PDF阅读器窗口已启动 (第${attempt}次尝试):`, item)
-              return true
-            }
-          }
-          
-          console.log(`PDF阅读器窗口未找到 (第${attempt}次尝试)`)
-          
-          // 如果是最后一次尝试，返回false
-          if (attempt === 3) {
-            console.log("经过3次尝试，PDF阅读器窗口仍未找到")
-            return false
-          }
-          // 否则继续下一次尝试
-          console.log(`将进行第${attempt + 1}次尝试...`)
-          
-        } catch (error) {
-          console.error(`第${attempt}次尝试获取窗口列表失败:`, error)
-          if (attempt === 3) {
-            throw error // 最后一次尝试失败时抛出错误
-          }
-          console.log(`将进行第${attempt + 1}次尝试...`)
-        }
-      }
-      
-      return false
+      return true
 
     } catch (error) {
       console.error("打开PDF时发生错误:", error)
@@ -104,95 +80,125 @@ export function InfiniteCanvas() {
     }
   }
 
-  const handleActivePreviewApp = async () => {
+  const handleActivePdfReader = async (pdfFileName: string): Promise<WindowInfo | undefined> => {
   // 激活PDF阅读器窗口
+    const defaultPDFReaderName = await getPdfReaderName(pdf_path)
+    console.log("默认PDF阅读器名称:", defaultPDFReaderName)
     const appleScript = `
-    try
-      tell application "Preview"
-        -- 检查应用是否有窗口
-        if (count of windows) > 0 then
-          -- 取消所有最小化的窗口
-          repeat with win in windows
-            if miniaturized of win then
-              set miniaturized of win to false
-            end if
-          end repeat
-        end if
-        -- 激活应用
-        activate
+// JXA (JavaScript for Automation) Script
+//
+// 功能:
+// 1. 动态检测系统默认的 PDF 阅读器。
+// 2. 在该应用中查找一个名字包含 "${pdfFileName}" 的窗口。
+// 3. 如果窗口是最小化的，则恢复它。
+// 4. 无论窗口之前状态如何，都将其激活并置于最前台。
+
+'use strict';
+
+// 定义主逻辑函数
+function handlePdfWindow() {
+    try {
+        // 连接到动态确定的应用程序
+        const targetApp = Application("${defaultPDFReaderName}");
         
-        -- 获取前台窗口的信息
-        if (count of windows) > 0 then
-          set frontWin to front window
-          set winBounds to bounds of frontWin
-          set winX to item 1 of winBounds
-          set winY to item 2 of winBounds
-          set winRight to item 3 of winBounds
-          set winBottom to item 4 of winBounds
-          set winWidth to winRight - winX
-          set winHeight to winBottom - winY
-          
-          -- 返回结构化信息
-          return "success|x:" & winX & "|y:" & winY & "|width:" & winWidth & "|height:" & winHeight & "|bounds:" & winX & "," & winY & "," & winRight & "," & winBottom
-        else
-          return "success|no_windows"
-        end if
-      end tell
-    on error errorMessage
-      return "error: " & errorMessage
-    end try
-  `
-    const command = Command.create("run-applescript", ["-e", appleScript])
+        // 确保目标应用正在运行
+        if (!targetApp.running()) {
+            return "error: ${defaultPDFReaderName} is not running.";
+        }
+
+        // 查找目标窗口
+        const targetWindow = targetApp.windows().find(win => {
+            return win.name().includes('${pdfFileName}');
+        });
+
+        // 如果找到了符合条件的窗口
+        if (targetWindow) {
+            // 步骤1: 检查窗口是否是最小化的。如果是，就恢复它。
+            if (targetWindow.miniaturized()) {
+                targetWindow.miniaturized = false;
+            }
+            
+            // 步骤2: 激活目标应用，使其成为当前活跃的应用
+            targetApp.activate();
+            
+            // 步骤3: 将目标窗口置于最前台。
+            targetWindow.index = 1;
+            
+            // 步骤4: 获取窗口的位置和尺寸信息
+            const bounds = targetWindow.bounds();
+            const x = bounds.x;
+            const y = bounds.y;
+            const width = bounds.width;
+            const height = bounds.height;
+            
+            // 返回成功信息
+            return "success|x:" + x + "|y:" + y + "|width:" + width + "|height:" + height + "|bounds:" + bounds.x + "," + bounds.y + "," + (bounds.x + bounds.width) + "," + (bounds.y + bounds.height);
+        } else {
+            // 如果没有找到符合条件的窗口
+            return "success|no_matching_window_found";
+        }
+
+    } catch (e) {
+        // 如果在执行过程中发生任何错误，捕获并返回错误信息
+        return "error:" + e.message;
+    }
+}
+
+// 调用函数并返回结果
+handlePdfWindow();
+`   
+    const command = Command.create("run-applescript", ["-l", "JavaScript", "-e", appleScript])
     const output = await command.execute()
+    console.log("handleActivePdfReader() 执行结果:", output)
     if (output.code !== 0) {
-      console.error("AppleScript执行失败:", output.stderr)
-      return
+      console.error("handleActivePdfReader() 执行失败:", output.stderr)
+      return undefined
     }
     
     // 解析窗口信息
     const result = output.stdout.trim()
-    console.log("AppleScript 原始输出:", result)
+    console.log("handleActivePdfReader() 原始输出:", result)
     
     if (result.startsWith("success|")) {
       const parts = result.split("|")
-      if (parts.length > 1 && parts[1] !== "no_windows") {
-        const windowInfo = {
+      if (parts.length > 1 && parts[1] !== "no_matching_window_found") {
+        const window_info: WindowInfo = {
           x: 0,
           y: 0,
           width: 0,
           height: 0,
           bounds: ""
         }
-        
+
         // 解析各个部分
         parts.slice(1).forEach(part => {
-          if (part.startsWith("x:")) windowInfo.x = parseInt(part.substring(2))
-          if (part.startsWith("y:")) windowInfo.y = parseInt(part.substring(2))
-          if (part.startsWith("width:")) windowInfo.width = parseInt(part.substring(6))
-          if (part.startsWith("height:")) windowInfo.height = parseInt(part.substring(7))
-          if (part.startsWith("bounds:")) windowInfo.bounds = part.substring(7)
+          if (part.startsWith("x:")) window_info.x = parseInt(part.substring(2))
+          if (part.startsWith("y:")) window_info.y = parseInt(part.substring(2))
+          if (part.startsWith("width:")) window_info.width = parseInt(part.substring(6))
+          if (part.startsWith("height:")) window_info.height = parseInt(part.substring(7))
+          if (part.startsWith("bounds:")) window_info.bounds = part.substring(7)
         })
         
-        console.log("Preview窗口信息:", windowInfo)
-        console.log(`窗口位置: (${windowInfo.x}, ${windowInfo.y})`)
-        console.log(`窗口大小: ${windowInfo.width} x ${windowInfo.height}`)
-        console.log(`窗口边界: ${windowInfo.bounds}`)
+        console.log("pdfreader窗口信息:", window_info)
+        console.log(`窗口位置: (${window_info.x}, ${window_info.y})`)
+        console.log(`窗口大小: ${window_info.width} x ${window_info.height}`)
+        console.log(`窗口边界: ${window_info.bounds}`)
 
-        // 计算预览app的逻辑中心点坐标
-        setPreviewAppCenterX(windowInfo.x + Math.floor(windowInfo.width / 2))
-        setPreviewAppCenterY(windowInfo.y + Math.floor(windowInfo.height / 2))
+        // 计算PDF阅读器的逻辑中心点坐标
+        setPdfReaderCenterX(window_info.x + Math.floor(window_info.width / 2))
+        setPdfReaderCenterY(window_info.y + Math.floor(window_info.height / 2))
+        
+        return window_info
       } else {
-        console.log("Preview应用没有窗口")
+        console.log("pdfreader应用没有窗口")
+        return undefined
       }
-    } else if (result.startsWith("error:")) {
-      console.error("AppleScript执行错误:", result)
+    } else {
+      return undefined
     }
-    
-    // 抢回焦点
-    await Window.getCurrent().setFocus()
   }
 
-  async function handlePreviewAppScreenshot() {
+  async function handlePdfReaderScreenshot(pdfPath: string) {
     // 截屏
     const hasPermission = await checkScreenRecordingPermission()
     if (!hasPermission) {
@@ -206,13 +212,16 @@ export function InfiniteCanvas() {
       }
     }
     
-    // 激活PDF阅读器窗口，即使它被最小化了
-    handleActivePreviewApp()
-
     // 取得pdfPath中文件名的部分
     const pdfFileName = pdfPath.split("/").pop() || ""
     if (pdfFileName === "") {
       console.error("无法获取PDF文件名，无法进行截图")
+      return
+    }
+    // 激活PDF阅读器窗口，即使它被最小化了
+    const window_info = await handleActivePdfReader(pdfFileName)
+    if (!window_info) {
+      console.error("未能激活PDF阅读器窗口")
       return
     }
     const windows = await getScreenshotableWindows()
@@ -234,6 +243,8 @@ export function InfiniteCanvas() {
     const path = await getWindowScreenshot(window_id)
     // console.log(path) // xx/tauri-plugin-screenshots/window-{id}.png
     revealItemInDir(path)
+    // 抢回焦点
+    await Window.getCurrent().setFocus()
   }
 
   async function ensureAccessibilityPermission() {
@@ -281,25 +292,30 @@ export function InfiniteCanvas() {
   //   }
   // }
 
-  const handleControlPreviewApp = async () => {
+  const handleControlPdfReader = async (pdfPath: string) => {
     try {
-      console.log("开始控制预览应用...")
-
       // 检查辅助功能权限
       const hasPermission = await ensureAccessibilityPermission()
       console.log("权限检查结果:", hasPermission)
 
       if (hasPermission) {
         // --- 第1步：打开PDF并抢回焦点 ---
-        const result = await handleOpenPDF()
-        if (!result) {
-          console.error("未能打开PDF文件")
+        const pdfFileName = pdfPath.split("/").pop() || ""
+        if (pdfFileName === "") {
+          console.error("无法获取PDF文件名")
           return
+        }
+        const window_info = await handleActivePdfReader(pdfFileName)
+        if (window_info === undefined) {
+          const result = await handleOpenPDF(pdfPath)
+          if (!result) {
+            console.error("未能打开PDF文件")
+            return
+          }  
         }
         const appWindow = Window.getCurrent()
         const windowFactor = await getCurrentWindow().scaleFactor();
         console.log("窗口缩放因子:", windowFactor)
-        await appWindow.setFocus()
 
         // const windowList = await Window.getAll();
         // console.log("当前所有窗口列表:", windowList);
@@ -335,21 +351,53 @@ export function InfiniteCanvas() {
         console.log(
           `AppleScript将设置“预览”窗口位置为: {左上角x:${scaledHalfWidth}, 左上角y:0, 右下角x:${scaledMonitorWidth}, 右下角y:${scaledMonitorHeight}}`
         )
-        // 计算预览app的逻辑中心点坐标
-        setPreviewAppCenterX(scaledHalfWidth + Math.floor((scaledMonitorWidth - scaledHalfWidth) / 2))
-        setPreviewAppCenterY(Math.floor(scaledMonitorHeight / 2))
+        // 计算PDF阅读器的逻辑中心点坐标
+        setPdfReaderCenterX(scaledHalfWidth + Math.floor((scaledMonitorWidth - scaledHalfWidth) / 2))
+        setPdfReaderCenterY(Math.floor(scaledMonitorHeight / 2))
         // refer https://apple.stackexchange.com/questions/376928/apple-script-how-do-i-check-if-the-bounds-of-a-window-are-equal-to-specific-va
+        const defaultPDFReaderName = await getPdfReaderName(pdf_path)
         const appleScript = `
-          tell application "Preview"
-            if (bounds of front window) is not equal to {${scaledHalfWidth}, 0, ${scaledMonitorWidth}, ${scaledMonitorHeight}} then
-              set bounds of front window to {${scaledHalfWidth}, 0, ${scaledMonitorWidth}, ${scaledMonitorHeight}}
-            end if
-          end tell
-        `
-        const command = Command.create("run-applescript", ["-e", appleScript])
+const app = Application("${defaultPDFReaderName}");
+
+// 确保应用至少有一个窗口，避免脚本出错
+if (app.windows.length > 0) {
+    const frontWindow = app.windows[0]; // 获取最前方的窗口
+
+    // JXA 的 bounds 是一个对象: {x, y, width, height}
+    // 需要将传入的坐标转换为 JXA 的格式来进行比较和设置。
+
+    // 1. 获取窗口当前的 bounds (格式: {x, y, width, height})
+    const currentBounds = frontWindow.bounds();
+
+    // 2. 根据传入的变量，计算出目标 bounds (JXA 格式)
+    const targetX = ${scaledHalfWidth};
+    const targetY = 0;
+    const targetWidth = ${scaledMonitorWidth} - ${scaledHalfWidth};
+    const targetHeight = ${scaledMonitorHeight};
+
+    // 3. 比较当前 bounds 和目标 bounds 的每一个属性
+    //    直接比较对象 (currentBounds !== targetBounds) 是行不通的。
+    if (currentBounds.x !== targetX ||
+        currentBounds.y !== targetY ||
+        currentBounds.width !== targetWidth ||
+        currentBounds.height !== targetHeight) 
+    {
+        // 4. 如果不相等，就设置窗口的 bounds
+        frontWindow.bounds = {
+            x: targetX,
+            y: targetY,
+            width: targetWidth,
+            height: targetHeight
+        };
+    }
+}`
+        const command = Command.create("run-applescript", ["-l", "JavaScript", "-e", appleScript])
         const output = await command.execute()
+        console.log("handleControlPdfReader() 执行结果:", output)
+        // 抢回焦点
+        await Window.getCurrent().setFocus()
         if (output.code !== 0) {
-          console.error("AppleScript执行失败:", output.stderr)
+          console.error("handleControlPdfReader() 执行失败:", output.stderr)
         } else {
           console.log("分屏布局设置成功！")
         }
@@ -374,8 +422,8 @@ export function InfiniteCanvas() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        x: previewAppCenterX,
-        y: previewAppCenterY,
+        x: pdfReaderCenterX,
+        y: pdfReaderCenterY,
         dy: direction === "up" ? -trueScrollSpeed : trueScrollSpeed,
       }),
     });
@@ -394,25 +442,16 @@ export function InfiniteCanvas() {
       <div className="flex gap-2">
         <Button
           onClick={() => {
-            handleControlPreviewApp()
+            handleControlPdfReader(pdf_path)
           }}
           variant={"default"}
           className="flex-1 px-3 py-1 text-sm"
         >
-          <span className="text-xs">打开PDF并重排窗口</span>
+          <span className="text-xs">打开PDF/继续阅读(激活并重排窗口)</span>
         </Button>
         <Button
           onClick={() => {
-            handleActivePreviewApp()
-          }}
-          variant={"outline"}
-          className="flex-1 px-3 py-1 text-sm"
-        >
-          <span className="text-xs">寻找PDF阅读器窗口</span>
-        </Button>
-        <Button
-          onClick={() => {
-            handlePreviewAppScreenshot()
+            handlePdfReaderScreenshot(pdf_path)
           }}
           variant={"outline"}
           className="flex-1 px-3 py-1 text-sm"
