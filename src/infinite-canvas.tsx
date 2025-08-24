@@ -82,8 +82,10 @@ tell application "System Events" to get name of (get default application of file
 
   const handleActivePdfReader = async (pdfFileName: string): Promise<WindowInfo | undefined> => {
   // 激活PDF阅读器窗口
+    if (pdfFileName === "") {
+      return undefined
+    }
     const defaultPDFReaderName = await getPdfReaderName(pdf_path)
-    console.log("默认PDF阅读器名称:", defaultPDFReaderName)
     const appleScript = `
 // JXA (JavaScript for Automation) Script
 //
@@ -156,9 +158,7 @@ handlePdfWindow();
     }
     
     // 解析窗口信息
-    const result = output.stdout.trim()
-    console.log("handleActivePdfReader() 原始输出:", result)
-    
+    const result = output.stdout.trim()    
     if (result.startsWith("success|")) {
       const parts = result.split("|")
       if (parts.length > 1 && parts[1] !== "no_matching_window_found") {
@@ -448,6 +448,16 @@ if (app.windows.length > 0) {
           className="flex-1 px-3 py-1 text-sm"
         >
           <span className="text-xs">打开PDF/继续阅读(激活并重排窗口)</span>
+        </Button>
+        <Button
+          onClick={() => {
+            const pdfFileName = pdf_path.split("/").pop() || ""
+            handleActivePdfReader(pdfFileName)
+          }}
+          variant={"default"}
+          className="flex-1 px-3 py-1 text-sm"
+        >
+          <span className="text-xs">激活不重排窗口</span>
         </Button>
         <Button
           onClick={() => {
