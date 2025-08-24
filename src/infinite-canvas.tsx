@@ -80,8 +80,9 @@ tell application "System Events" to get name of (get default application of file
     }
   }
 
-  const handleActivePdfReader = async (pdfFileName: string): Promise<WindowInfo | undefined> => {
+  const handleActivePdfReader = async (pdf_path: string): Promise<WindowInfo | undefined> => {
   // 激活PDF阅读器窗口
+    const pdfFileName = pdf_path.split("/").pop() || ""
     if (pdfFileName === "") {
       return undefined
     }
@@ -219,7 +220,7 @@ handlePdfWindow();
       return
     }
     // 激活PDF阅读器窗口，即使它被最小化了
-    const window_info = await handleActivePdfReader(pdfFileName)
+    const window_info = await handleActivePdfReader(pdfPath)
     if (!window_info) {
       console.error("未能激活PDF阅读器窗口")
       return
@@ -300,12 +301,7 @@ handlePdfWindow();
 
       if (hasPermission) {
         // --- 第1步：打开PDF并抢回焦点 ---
-        const pdfFileName = pdfPath.split("/").pop() || ""
-        if (pdfFileName === "") {
-          console.error("无法获取PDF文件名")
-          return
-        }
-        const window_info = await handleActivePdfReader(pdfFileName)
+        const window_info = await handleActivePdfReader(pdfPath)
         if (window_info === undefined) {
           const result = await handleOpenPDF(pdfPath)
           if (!result) {
@@ -355,7 +351,7 @@ handlePdfWindow();
         setPdfReaderCenterX(scaledHalfWidth + Math.floor((scaledMonitorWidth - scaledHalfWidth) / 2))
         setPdfReaderCenterY(Math.floor(scaledMonitorHeight / 2))
         // refer https://apple.stackexchange.com/questions/376928/apple-script-how-do-i-check-if-the-bounds-of-a-window-are-equal-to-specific-va
-        const defaultPDFReaderName = await getPdfReaderName(pdf_path)
+        const defaultPDFReaderName = await getPdfReaderName(pdfPath)
         const appleScript = `
 const app = Application("${defaultPDFReaderName}");
 
@@ -451,8 +447,7 @@ if (app.windows.length > 0) {
         </Button>
         <Button
           onClick={() => {
-            const pdfFileName = pdf_path.split("/").pop() || ""
-            handleActivePdfReader(pdfFileName)
+            handleActivePdfReader(pdf_path)
           }}
           variant={"default"}
           className="flex-1 px-3 py-1 text-sm"
