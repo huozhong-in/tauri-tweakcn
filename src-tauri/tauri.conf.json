@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "temp-tauri-app",
+  "productName": "tauri-app",
   "version": "0.1.0",
-  "identifier": "com.temp-tauri-app.app",
+  "identifier": "tauri-app.temp.com",
   "build": {
     "beforeDevCommand": "bun run dev",
     "devUrl": "http://localhost:1421",
@@ -34,6 +34,32 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "externalBin": [
+      "bin/uv",
+      "bin/uvx"
+    ],
+    "macOS": {
+      "dmg": {
+        "appPosition": {
+          "x": 180,
+          "y": 170
+        },
+        "applicationFolderPosition": {
+          "x": 480,
+          "y": 170
+        },
+        "windowSize": {
+          "height": 400,
+          "width": 660
+        }
+      },
+      "files": {
+        "Resources/api/pyproject.toml": "../api/pyproject.toml",
+        "Resources/api/app.py": "../api/app.py"
+      },
+      "hardenedRuntime": true,
+      "minimumSystemVersion": "10.13"
+    }
   }
 }

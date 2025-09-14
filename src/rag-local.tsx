@@ -1,3 +1,13 @@
+
+// 监听message事件
+window.addEventListener('message', (event) => {
+  // 只接受来自指定源的消息
+  // if (event.origin !== 'http://localhost:1421') return;
+  const message = event.data;
+  console.log('Received message from iframe:', message);
+  // 处理接收到的消息
+});
+
 export function RagLocal() {
   return (
     <div className="flex flex-col h-full">
