@@ -11,7 +11,7 @@ import { ImperativePanelHandle } from "react-resizable-panels"
 import { FileList } from "./file-list"
 import { RagLocal } from "./rag-local"
 import { useChat } from '@ai-sdk/react';
-import { TextStreamChatTransport, convertToModelMessages } from 'ai';
+import { TextStreamChatTransport } from 'ai';
 
 
 export function AppWorkspace() {

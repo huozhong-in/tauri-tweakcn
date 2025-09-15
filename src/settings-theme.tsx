@@ -2,19 +2,13 @@ import React from "react";
 import { Settings } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import ThemeControlPanel from "@/tweakcn/components/editor/theme-control-panel";
-import { useEditorStore } from "@/tweakcn/store/editor-store";
-import { useTheme } from "@/tweakcn/components/theme-provider";
-import { ThemeStyles } from "@/tweakcn/types/theme";
 
 interface ThemeSettingsDialogProps {
   children?: React.ReactNode;
 }
 
 export function ThemeSettingsDialog({ children }: ThemeSettingsDialogProps) {
-  const { themeState, setThemeState } = useEditorStore();
-  const { theme } = useTheme();
-
+ 
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -33,14 +27,7 @@ export function ThemeSettingsDialog({ children }: ThemeSettingsDialogProps) {
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 min-h-0" style={{ height: '500px' }}>
-          <ThemeControlPanel
-            styles={themeState.styles}
-            currentMode={theme}
-            onChange={(newStyles: ThemeStyles) => {
-              setThemeState({ ...themeState, styles: newStyles });
-            }}
-            themePromise={Promise.resolve(null)}
-          />
+         
         </div>
       </DialogContent>
     </Dialog>

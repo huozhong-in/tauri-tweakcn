@@ -1,5 +1,4 @@
 import "./index.css";
-import "./tweakcn/app/globals.css"
 import { create } from "zustand"
 import { Toaster } from "@/components/ui/sonner"
 import { SidebarProvider } from "@/components/ui/sidebar"

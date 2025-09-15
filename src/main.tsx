@@ -4,8 +4,6 @@ import { create } from 'zustand';
 import { load } from '@tauri-apps/plugin-store';
 import { join, appDataDir } from '@tauri-apps/api/path';
 import App from "./App";
-import { ThemeProvider } from "./tweakcn/components/theme-provider";
-import { TooltipProvider } from "./tweakcn/components/ui/tooltip";
 
 interface AppGlobalState {
   showWelcomeDialog: boolean;
@@ -119,12 +117,7 @@ const initializeApp = async () => {
     // 渲染应用
     ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
       <React.StrictMode>
-        <ThemeProvider>
-          {/* @ts-ignore */}
-          <TooltipProvider delayDuration={0}>
-            <App />
-          </TooltipProvider>
-        </ThemeProvider>
+          <App />
       </React.StrictMode>
     );
   } catch (error) {

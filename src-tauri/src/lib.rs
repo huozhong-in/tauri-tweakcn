@@ -3,12 +3,6 @@ use tauri_plugin_shell::process::CommandEvent;
 use tauri::path::BaseDirectory;
 use tauri::{ Manager, Emitter};
 
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-// #[tauri::command]
-// fn greet(name: &str) -> String {
-//     format!("Hello, {}! You've been greeted from Rust!", name)
-// }
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -74,8 +68,6 @@ pub fn run() {
             .expect("Failed to spawn sidecar");
 
             // 通过uv运行app.py
-            let uv_venv_path = venv_parent_path.join(".venv");
-            println!("uv_venv_path: {:?}", uv_venv_path);
             // 如果是开发环境app.py在../api/app.py，否则在BaseDirectory::Resource/api/app.py
             let app_py_path = if cfg!(debug_assertions) {
                 venv_parent_path.join("app.py")
@@ -87,7 +79,6 @@ pub fn run() {
             .shell()
             .sidecar("uv")
             .unwrap()
-            // .env("UV_PROJECT_ENVIRONMENT", uv_venv_path.to_str().unwrap())
             .args([
                 "run", 
                 "--directory", venv_parent_path.to_str().unwrap(),
@@ -114,7 +105,6 @@ pub fn run() {
             });
             Ok(())
         })
-        // .invoke_handler(tauri::generate_handler![greet])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
